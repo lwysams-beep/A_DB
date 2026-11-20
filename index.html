@@ -106,7 +106,7 @@
                             statusDiv.style.color = currentUserIsAdmin ? '#1b5e20' : '#0d47a1';
                         }
                         if (currentUserIsAdmin) window.renderAuthorizedUsers();
-                        window.loadFromCloud_Impl('1');
+                        window.openMultiYearView();
                     } catch (e) {
                         console.error('登入授權檢查失敗:', e);
                         await auth.signOut();
@@ -899,12 +899,32 @@
         window.getAssessmentCohortYear = function(a) {
             const meta = a?.meta || {};
             const id = String(a?.id || meta.assessmentId || '');
-            const yearRaw = String(meta.schoolYear || id.match(/^\d{2,4}/)?.[1] || '');
-            const gradeRaw = String(meta.grade || id.match(/P([1-6])/i)?.[1] || '');
-            const gradeNum = Number(String(gradeRaw).replace(/[^0-9]/g, ''));
-            let schoolYear = Number(yearRaw);
-            if (yearRaw.length === 4) schoolYear = Number(yearRaw.slice(-2));
-            if (!Number.isFinite(schoolYear) || !Number.isFinite(gradeNum) || gradeNum < 1 || gradeNum > 6) return null;
+            
+            // Safe schoolYear parsing to prevent Number("") evaluating to 0
+            let schoolYear = NaN;
+            if (meta.schoolYear && String(meta.schoolYear).trim() !== "") {
+                schoolYear = Number(meta.schoolYear);
+            }
+            if (isNaN(schoolYear)) {
+                const match = id.match(/^(\d{2,4})/);
+                if (match) schoolYear = Number(match[1]);
+            }
+            
+            // Safe grade parsing
+            let gradeNum = NaN;
+            const gradeRaw = meta.grade || id.match(/P([1-6])/i)?.[1];
+            if (gradeRaw) {
+                gradeNum = Number(String(gradeRaw).replace(/[^0-9]/g, ''));
+            }
+            
+            if (isNaN(schoolYear) || isNaN(gradeNum) || gradeNum < 1 || gradeNum > 6) {
+                return null;
+            }
+            
+            if (schoolYear > 100) {
+                schoolYear = schoolYear % 100;
+            }
+            
             return schoolYear - gradeNum + 1;
         };
 
@@ -1424,14 +1444,8 @@
             <div id="authorizedUsersList" style="margin-top:10px;background:white;border:1px solid #eee;border-radius:5px;padding:8px;">載入中…</div>
         </section>
 
-        <div class="nav-bar">
-            <button class="nav-btn active" onclick="window.switchGradeUI('1')">P1</button>
-            <button class="nav-btn" onclick="window.switchGradeUI('2')">P2</button>
-            <button class="nav-btn" onclick="window.switchGradeUI('3')">P3</button>
-            <button class="nav-btn" onclick="window.switchGradeUI('4')">P4</button>
-            <button class="nav-btn" onclick="window.switchGradeUI('5')">P5</button>
-            <button class="nav-btn" onclick="window.switchGradeUI('6')">P6</button>
-            <button class="nav-btn multi-year-nav-btn" id="multiYearNavBtn" onclick="window.openMultiYearView()">📚 跨年度成績分析</button>
+<div class="nav-bar">
+            <button class="nav-btn active multi-year-nav-btn" id="multiYearNavBtn" onclick="window.openMultiYearView()">📚 跨年度成績分析 (主視窗)</button>
         </div>
 
         <div id="cloudStatus" class="cloud-status-bar">準備就緒</div>
