@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>跨年度學籍 Z-Score 智慧分析系統 (v12.0 - 獨立微調版)</title>
+    <title>跨年度學籍 Z-Score 智慧分析系統 (v13.0 - 官方名冊與極致容錯版)</title>
     <!-- 引入 Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- 引入 Chart.js 及插件 -->
@@ -55,6 +55,7 @@
         .filter-panel { background-color: #edf2f7; border-radius: 8px; padding: 12px; margin-bottom: 12px; font-size: 0.9rem; }
         .btn-download { background-color: #4a5568; color: white; border: none; padding: 4px 12px; font-size: 0.8rem; border-radius: 4px; transition: 0.2s; }
         .btn-download:hover { background-color: #2d3748; }
+        .section-title { border-left: 5px solid #3182ce; padding-left: 10px; margin-bottom: 20px; font-weight: bold; color: #2d3748; }
     </style>
 </head>
 <body>
@@ -77,7 +78,7 @@
         <div></div>
         <div class="text-center">
             <h1 class="fw-bold text-primary mb-1">📊 跨年度 Z-Score 智慧分析系統</h1>
-            <p class="text-muted mb-0">v12.0 - 跨學年 Cohort 追蹤與獨立微調版</p>
+            <p class="text-muted mb-0">v13.0 - 官方年度名冊與極致對齊版</p>
         </div>
         <div class="text-end">
             <span id="user-role-badge" class="badge me-2"></span>
@@ -87,7 +88,7 @@
     </div>
 
     <!-- 頂部控制面板：選擇現行年度與年級 -->
-    <div class="card mb-4 shadow-sm bg-white">
+    <div class="card mb-4 shadow-sm bg-white border-start border-primary border-4">
         <div class="card-body">
             <div class="row g-3 align-items-center">
                 <div class="col-md-3">
@@ -113,32 +114,63 @@
         </div>
     </div>
 
-    <!-- 📁 成績上載與資料儲存區 (僅管理員可見) -->
+    <!-- ===== 📁 數據管理中心 (僅管理員可見) ===== -->
     <div class="card mb-4 shadow-sm" id="uploadSection" style="display: none;">
-        <div class="card-header bg-primary text-white">📥 1. 上載新學期成績並存入雲端 (管理員專用)</div>
+        <div class="card-header bg-primary text-white">📥 資料庫建置中心 (管理員專用)</div>
         <div class="card-body bg-light">
-            <div class="row g-3 align-items-end">
-                <div class="col-md-3">
-                    <label class="form-label fw-bold">A. 輸入本次評估代號</label>
-                    <input type="text" id="inputAssessCode" class="form-control" placeholder="例如: 26P3T1" value="26P3T1">
+            <div class="row g-4">
+                <!-- A. 年度官方名冊上傳欄 -->
+                <div class="col-md-6 border-end">
+                    <h5 class="section-title text-success">👤 A. 上載「年度官方學生名冊」</h5>
+                    <p class="text-muted small">請在上傳學期成績前，先上載該學年的名冊。用於跨年追蹤學生班別與姓名。</p>
+                    <div class="row g-2 align-items-end">
+                        <div class="col-6">
+                            <label class="form-label fw-bold small">學年 (如 26)</label>
+                            <input type="number" id="regYearInput" class="form-control form-control-sm" placeholder="26" value="26">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-bold small">年級 (如 P3)</label>
+                            <select id="regGradeInput" class="form-select form-select-sm">
+                                <option value="P1">P1</option><option value="P2">P2</option>
+                                <option value="P3" selected>P3</option><option value="P4">P4</option>
+                                <option value="P5">P5</option><option value="P6">P6</option>
+                            </select>
+                        </div>
+                        <div class="col-12 mt-2">
+                            <label class="form-label fw-bold small">選擇名冊 CSV (欄位必含：學生註冊編號/學號、姓名、班別)</label>
+                            <input type="file" id="fileRegistryCSV" class="form-control form-control-sm" accept=".csv">
+                        </div>
+                        <div class="col-12 mt-3">
+                            <button class="btn btn-success btn-sm w-100 fw-bold" onclick="uploadAndSaveRegistry()">🚀 載入並儲存官方名冊</button>
+                        </div>
+                    </div>
                 </div>
+
+                <!-- B. 學期成績上傳欄 -->
                 <div class="col-md-6">
-                    <label class="form-label fw-bold">B. 選擇該次成績 CSV 檔案</label>
-                    <input type="file" id="fileScoreCSV" class="form-control" accept=".csv">
+                    <h5 class="section-title text-primary">📊 B. 上載「學期成績 CSV」</h5>
+                    <p class="text-muted small">名冊上傳後，即可載入該學期的評估成績，系統會自動關聯名冊中的姓名。</p>
+                    <div class="row g-2 align-items-end">
+                        <div class="col-12">
+                            <label class="form-label fw-bold small">輸入評估代號 (例如: 26P3T1, 25P2T2A1)</label>
+                            <input type="text" id="inputAssessCode" class="form-control form-control-sm" placeholder="例如: 26P3T1" value="26P3T1">
+                        </div>
+                        <div class="col-12 mt-2">
+                            <label class="form-label fw-bold small">選擇該次評估成績 CSV (需含學號列「*Reg. No.」及學科成績)</label>
+                            <input type="file" id="fileScoreCSV" class="form-control form-control-sm" accept=".csv">
+                        </div>
+                        <div class="col-12 mt-3">
+                            <button class="btn btn-primary btn-sm w-100 fw-bold" onclick="uploadAndSaveScore()">🚀 載入並儲存成績</button>
+                        </div>
+                    </div>
                 </div>
-                <div class="col-md-3">
-                    <button class="btn btn-success w-100 fw-bold" onclick="uploadAndSaveScore()">🚀 載入並儲存至雲端</button>
-                </div>
-            </div>
-            <div class="text-muted small mt-2">
-                * 註：CSV 必須包含學識別欄位 <b>「*Reg. No.」</b> 或 <b>「學生註冊編號」</b>，以及學科分數如 <b>「中讀」、「中默」、「英讀」、「英默」、「數學」</b>。
             </div>
         </div>
     </div>
 
     <!-- 🔄 全域成績勾選區 -->
-    <div class="card mb-4 shadow-sm">
-        <div class="card-header bg-dark text-white">🔄 2. 挑選分析範圍 (已載入資料庫之同屆成績)</div>
+    <div class="card mb-4 shadow-sm border-start border-success border-4">
+        <div class="card-header bg-dark text-white">🔄 分析控制台：挑選分析範圍 (已載入資料庫之同屆成績)</div>
         <div class="card-body bg-white">
             <div class="row">
                 <div class="col-md-6 border-end">
@@ -439,11 +471,9 @@ function renderAssessmentCheckboxes() {
         return;
     }
     
-    // 依學年與評估代號排序
     cohortAssessments.sort((a,b) => a.code.localeCompare(b.code));
     
     cohortAssessments.forEach((assess) => {
-        // 舊成績 Checkbox
         const divOld = document.createElement('div');
         divOld.className = 'form-check form-check-inline';
         divOld.innerHTML = `
@@ -452,7 +482,6 @@ function renderAssessmentCheckboxes() {
         `;
         oldContainer.appendChild(divOld);
         
-        // 新成績 Radio
         const divNew = document.createElement('div');
         divNew.className = 'form-check form-check-inline';
         divNew.innerHTML = `
@@ -470,7 +499,92 @@ function syncGlobalSelection() {
     }
 }
 
-// --- 核心邏輯 2: 成績上載與計算並存入 Firebase ---
+// --- 輔助函數: 自動偵測 CSV 編碼進行 PapaParse 解析 ---
+function parseCSVFile(file, completeCallback, errorCallback) {
+    // 試探讀取前面部分，檢測是否為 Big5 或 UTF-8
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const text = e.target.result;
+        // 若包含亂碼特徵，則嘗試切換編碼
+        const encoding = text.includes('') ? "big5" : "utf-8";
+        
+        Papa.parse(file, {
+            header: false,
+            skipEmptyLines: true,
+            encoding: encoding,
+            complete: completeCallback,
+            error: errorCallback
+        });
+    };
+    reader.readAsText(file.slice(0, 5000)); // 讀取前 5KB 做檢測
+}
+
+// --- 核心邏輯 2: A. 上載年度官方名冊 ---
+async function uploadAndSaveRegistry() {
+    if (currentUserRole !== 'admin') { alert("權限不足：只有管理員能上載官方名冊。"); return; }
+    
+    const year = document.getElementById('regYearInput').value.trim();
+    const grade = document.getElementById('regGradeInput').value;
+    const fileEl = document.getElementById('fileRegistryCSV');
+    
+    if (!year || !fileEl.files || fileEl.files.length === 0) {
+        alert("請輸入學年並選擇名冊 CSV 檔案！");
+        return;
+    }
+    
+    const registryDocId = `${year}_${grade}_Registry`;
+    showStatus("⏳ 正在解析並儲存官方名冊...", "warning");
+    
+    parseCSVFile(fileEl.files[0], async (results) => {
+        try {
+            const rawRows = results.data;
+            if (rawRows.length === 0) throw new Error("名冊檔案為空");
+            
+            let headerIdx = rawRows.findIndex(r => r.some(cell => String(cell).includes('Reg') || String(cell).includes('編號') || String(cell).includes('學號')));
+            if (headerIdx === -1) headerIdx = 0;
+            
+            const headers = rawRows[headerIdx].map(h => String(h || '').trim());
+            const dataRows = rawRows.slice(headerIdx + 1);
+            
+            const colReg = headers.find(h => h.includes('*Reg. No.') || h.includes('學生註冊編號') || h.includes('註冊編號') || h.includes('學號'));
+            const colName = headers.find(h => h.includes('姓名') || h.includes('Name') || h.includes('中文姓名'));
+            const colClass = headers.find(h => h.includes('班') || h.includes('Class') || h.includes('組'));
+            
+            if (!colReg || !colName || !colClass) {
+                throw new Error("名冊 CSV 必須包含：註冊編號(學號)、姓名、班別等欄位！");
+            }
+            
+            const registryMap = {};
+            dataRows.forEach(row => {
+                const regNo = String(row[headers.indexOf(colReg)] || '').trim().replace(/#/g, '');
+                const name = String(row[headers.indexOf(colName)] || '').trim();
+                const cls = String(row[headers.indexOf(colClass)] || '').trim();
+                
+                if (regNo) {
+                    registryMap[regNo] = { name, class: cls };
+                }
+            });
+            
+            await window.setDoc(window.doc(window.db, "StudentRegistry_v2", registryDocId), {
+                year: parseInt(year),
+                grade: grade,
+                lastUpdated: new Date().toISOString(),
+                registry: registryMap
+            });
+            
+            showStatus(`✅ 官方年度名冊已成功載入並建置！(註冊ID: ${registryDocId})`, "success");
+            alert(`名冊建置成功！\n共載入 ${Object.keys(registryMap).length} 名學生名冊紀錄。`);
+            
+        } catch (err) {
+            showStatus(`❌ 名冊解析/儲存失敗: ${err.message}`, 'danger');
+            alert("錯誤: " + err.message);
+        }
+    }, (err) => {
+        showStatus(`❌ 讀取 CSV 錯誤: ${err.message}`, 'danger');
+    });
+}
+
+// --- 核心邏輯 3: B. 上載學期成績並串聯名冊 ---
 async function uploadAndSaveScore() {
     if (currentUserRole !== 'admin') { alert("權限不足：只有管理員能上載成績。"); return; }
     
@@ -481,7 +595,6 @@ async function uploadAndSaveScore() {
         return;
     }
     
-    // 解析代號，例如 26P3T1
     const match = code.match(/^(\d+)(P\d)(.+)$/i);
     if (!match) {
         alert("代號格式不正確，必須如 '26P3T1' (學年+年級+次別)");
@@ -491,97 +604,108 @@ async function uploadAndSaveScore() {
     const grade = match[2].toUpperCase();
     const term = match[3].toUpperCase();
     
-    showStatus("⏳ 正在解析上載之成績檔案...", "warning");
+    showStatus("⏳ 正在撈取對應之年度官方名冊進行學號對齊...", "warning");
     
-    Papa.parse(fileEl.files[0], {
-        header: false, skipEmptyLines: true, encoding: "big5",
-        complete: async (results) => {
-            try {
-                const rawRows = results.data;
-                if (rawRows.length === 0) throw new Error("檔案內容為空");
+    // 先去雲端找名冊
+    const registryDocId = `${year}_${grade}_Registry`;
+    let registryMap = {};
+    try {
+        const regSnap = await window.getDoc(window.doc(window.db, "StudentRegistry_v2", registryDocId));
+        if (regSnap.exists()) {
+            registryMap = regSnap.data().registry;
+        } else {
+            const proceed = confirm(`⚠️ 未偵測到對應的官方名冊（ID: ${registryDocId}）。\n若直接上傳，系統將從成績單直接讀取班別與姓名。是否繼續？`);
+            if (!proceed) {
+                showStatus("❌ 載入取消：請先上載官方名冊。", "secondary");
+                return;
+            }
+        }
+    } catch (e) {
+        console.error("撈取名冊失敗，改用成績表本體資料。", e);
+    }
+    
+    showStatus("⏳ 正在解析學期成績 CSV...", "warning");
+    
+    parseCSVFile(fileEl.files[0], async (results) => {
+        try {
+            const rawRows = results.data;
+            if (rawRows.length === 0) throw new Error("成績檔案內容為空");
+            
+            let headerIdx = rawRows.findIndex(r => r.some(cell => String(cell).includes('Reg') || String(cell).includes('編號') || String(cell).includes('學號')));
+            if (headerIdx === -1) headerIdx = 0;
+            
+            const headers = rawRows[headerIdx].map(h => String(h || '').trim());
+            const dataRows = rawRows.slice(headerIdx + 1);
+            
+            const colReg = headers.find(h => h.includes('*Reg. No.') || h.includes('學生註冊編號') || h.includes('註冊編號') || h.includes('學號'));
+            const colName = headers.find(h => h.includes('姓名') || h.includes('Name'));
+            const colClass = headers.find(h => h.includes('班') || h.includes('Class') || h.includes('組'));
+            
+            if (!colReg) throw new Error("無法定位學號欄位，請確認 CSV 含有「*Reg. No.」或「學生註冊編號」");
+            
+            const studentsList = [];
+            
+            dataRows.forEach(row => {
+                const regNo = String(row[headers.indexOf(colReg)] || '').trim().replace(/#/g, '');
+                if (!regNo) return;
                 
-                // 自動尋找標頭行
-                let headerIdx = rawRows.findIndex(r => r.some(cell => String(cell).includes('Reg') || String(cell).includes('編號') || String(cell).includes('學號')));
-                if (headerIdx === -1) headerIdx = 0;
+                // 優先從年度名冊自動關聯對齊
+                const regInfo = registryMap[regNo] || {};
+                const name = regInfo.name || String(row[headers.indexOf(colName)] || 'N/A').trim();
+                const cls = regInfo.class || String(row[headers.indexOf(colClass)] || 'N/A').trim();
                 
-                const headers = rawRows[headerIdx].map(h => String(h || '').trim());
-                const dataRows = rawRows.slice(headerIdx + 1);
+                const studentObj = {
+                    regNo: regNo,
+                    name: name,
+                    class: cls,
+                    chi_read: null, chi_dict: null, eng_read: null, eng_dict: null, math: null
+                };
                 
-                // 找出學號、姓名、班別欄位
-                const colReg = headers.find(h => h.includes('*Reg. No.') || h.includes('學生註冊編號') || h.includes('註冊編號') || h.includes('學號'));
-                const colName = headers.find(h => h.includes('姓名') || h.includes('Name'));
-                const colClass = headers.find(h => h.includes('班') || h.includes('Class') || h.includes('組'));
-                
-                if (!colReg) throw new Error("無法定位學號欄位，請確認 CSV 含有「*Reg. No.」或「學生註冊編號」");
-                
-                const studentsList = [];
-                
-                // 解析每一行學生成績
-                dataRows.forEach(row => {
-                    const studentObj = {
-                        regNo: '', name: 'N/A', class: 'N/A',
-                        chi_read: null, chi_dict: null, eng_read: null, eng_dict: null, math: null
-                    };
-                    
-                    headers.forEach((h, idx) => {
-                        const val = String(row[idx] || '').trim();
-                        if (h === colReg) studentObj.regNo = val.replace(/#/g, '');
-                        else if (h === colName) studentObj.name = val;
-                        else if (h === colClass) studentObj.class = val;
-                        
-                        // 判斷學科成績
-                        for (const [subjKey, synonyms] of Object.entries(SUBJECT_KEYS)) {
-                            if (synonyms.some(syn => h.includes(syn))) {
-                                const num = parseFloat(val);
-                                studentObj[subjKey] = isNaN(num) ? null : num;
-                            }
+                // 抓取科目
+                headers.forEach((h, idx) => {
+                    for (const [subjKey, synonyms] of Object.entries(SUBJECT_KEYS)) {
+                        if (synonyms.some(syn => h.includes(syn))) {
+                            const val = parseFloat(row[idx]);
+                            studentObj[subjKey] = isNaN(val) ? null : val;
                         }
-                    });
-                    
-                    if (studentObj.regNo) {
-                        studentsList.push(studentObj);
                     }
                 });
                 
-                // 將該次成績封裝存入 Firestore
-                const payload = {
-                    code: code,
-                    year: year,
-                    grade: grade,
-                    term: term,
-                    lastUpdated: new Date().toISOString(),
-                    students: studentsList
-                };
-                
-                await window.setDoc(window.doc(window.db, "CrossYearScores_v2", code), payload);
-                showStatus(`✅ 評估 ${code} 已成功載入並存入雲端！`, 'success');
-                alert(`上傳成功！評估代號: ${code}`);
-                onCohortChanged(); // 刷新可用列表
-                
-            } catch (err) {
-                showStatus(`❌ 解析/上傳失敗: ${err.message}`, 'danger');
-                alert(err.message);
-            }
+                studentsList.push(studentObj);
+            });
+            
+            const payload = {
+                code: code,
+                year: year,
+                grade: grade,
+                term: term,
+                lastUpdated: new Date().toISOString(),
+                students: studentsList
+            };
+            
+            await window.setDoc(window.doc(window.db, "CrossYearScores_v2", code), payload);
+            showStatus(`✅ 評估 ${code} 成功載入！已成功串聯 ${studentsList.length} 筆學生學籍成績！`, 'success');
+            alert(`成績上傳並串聯成功！\n評估代號: ${code}\n有效學籍學生數: ${studentsList.length}`);
+            onCohortChanged();
+            
+        } catch (err) {
+            showStatus(`❌ 成績解析失敗: ${err.message}`, 'danger');
+            alert(err.message);
         }
+    }, (err) => {
+        showStatus(`❌ 讀取 CSV 錯誤: ${err.message}`, 'danger');
     });
 }
 
-// --- 核心邏輯 3: 智慧交叉分析 (排除離校生、方法 A Z-Score 計算) ---
-let currentAnalysisResult = null; // 存放運算完成的對比資料
+// --- 核心邏輯 4: 智慧交叉分析 (排除離校生、方法 A Z-Score 計算) ---
+let currentAnalysisResult = null; 
 
 function triggerMainAnalysis() {
-    // 獲取選取
     const checkedOld = Array.from(document.querySelectorAll('input[name="globalOld"]:checked')).map(el => el.value);
     const selectedNew = document.querySelector('input[name="globalNew"]:checked')?.value;
     
-    if (!selectedNew) {
-        alert("請至少選擇一個「新成績」作為基準！");
-        return;
-    }
-    if (checkedOld.length === 0) {
-        alert("請至少選擇一個「舊成績」進行對比！");
-        return;
-    }
+    if (!selectedNew) { alert("請至少選擇一個「新成績」作為基準！"); return; }
+    if (checkedOld.length === 0) { alert("請至少選擇一個「舊成績」進行對比！"); return; }
     
     activeOldAssess = checkedOld;
     activeNewAssess = selectedNew;
@@ -592,29 +716,18 @@ function triggerMainAnalysis() {
 function performCalculation(oldCodes, newCode) {
     showStatus("⏳ 正在進行跨年度數據對齊與 Z-Score 分析...", "warning");
     
-    // 1. 取得新舊成績的評估物件
     const newAssessObj = cohortAssessments.find(a => a.code === newCode);
     const oldAssessObjs = cohortAssessments.filter(a => oldCodes.includes(a.code));
     
-    if (!newAssessObj) {
-        showStatus("❌ 找不到基準新成績資料", "danger");
-        return;
-    }
+    if (!newAssessObj) { showStatus("❌ 找不到基準新成績資料", "danger"); return; }
     
-    // 2. 以新成績名單為所有分析的絕對標準 (排除離校舊生)
     const baseStudents = newAssessObj.students; 
     const baseRegs = new Set(baseStudents.map(s => s.regNo));
-    
-    // 3. 分別計算各次評估中，屬於基準生名單的「全級」均分與標準差，用於計算個人獨立 Z-Score (方法 A)
-    const statsMap = {}; // 存放各評估各科的 mean, std
+    const statsMap = {}; 
     
     const allInvolvedAssess = [newAssessObj, ...oldAssessObjs];
     allInvolvedAssess.forEach(assess => {
         statsMap[assess.code] = {};
-        const isNew = (assess.code === newCode);
-        
-        // 為了確保標準化母體的一致性：
-        // 如果是新評估，母體就是當前在校生。如果是舊評估，母體只包含仍在新名單中的學生 (新名單未包括舊生，不要計入舊生)
         const cohortInAssess = assess.students.filter(s => baseRegs.has(s.regNo));
         
         ['chi_read', 'chi_dict', 'eng_read', 'eng_dict', 'math'].forEach(subj => {
@@ -629,7 +742,6 @@ function performCalculation(oldCodes, newCode) {
         });
     });
     
-    // 4. 計算學生的個人 Z-Score 與平均原始分
     const analyzedStudents = {};
     baseStudents.forEach(bs => {
         analyzedStudents[bs.regNo] = {
@@ -638,17 +750,15 @@ function performCalculation(oldCodes, newCode) {
             class: bs.class,
             newScores: { raw: {}, z: {} },
             oldScores: { raw: {}, z: {} },
-            details: {} // 記錄各評估點分科數據
+            details: {}
         };
     });
     
-    // 填充數值
     ['chi_read', 'chi_dict', 'eng_read', 'eng_dict', 'math'].forEach(subj => {
         baseStudents.forEach(bs => {
             const sId = bs.regNo;
             const stu = analyzedStudents[sId];
             
-            // A. 計算新成績的平均 (新成績限選一個，直接取其值)
             const newScoreVal = bs[subj];
             if (newScoreVal !== null && !isNaN(newScoreVal)) {
                 stu.newScores.raw[subj] = newScoreVal;
@@ -659,7 +769,6 @@ function performCalculation(oldCodes, newCode) {
                 stu.newScores.z[subj] = null;
             }
             
-            // B. 計算舊成績的平均 (舊成績可能有多個，計算其平均值)
             const oldRawList = [];
             const oldZList = [];
             
@@ -672,7 +781,6 @@ function performCalculation(oldCodes, newCode) {
                         const stats = statsMap[oldAssess.code][subj];
                         oldZList.push((oldVal - stats.mean) / stats.std);
                         
-                        // 記錄各點以便繪折線圖
                         if (!stu.details[oldAssess.code]) stu.details[oldAssess.code] = { raw: {}, z: {} };
                         stu.details[oldAssess.code].raw[subj] = oldVal;
                         stu.details[oldAssess.code].z[subj] = (oldVal - stats.mean) / stats.std;
@@ -680,7 +788,6 @@ function performCalculation(oldCodes, newCode) {
                 }
             });
             
-            // 記錄新點到 details 供折線圖使用
             if (!stu.details[newCode]) stu.details[newCode] = { raw: {}, z: {} };
             if (newScoreVal !== null && !isNaN(newScoreVal)) {
                 stu.details[newCode].raw[subj] = newScoreVal;
@@ -692,7 +799,6 @@ function performCalculation(oldCodes, newCode) {
         });
     });
     
-    // 5. 彙整班級名單與總體結果
     const classes = [...new Set(baseStudents.map(s => s.class))].sort();
     
     currentAnalysisResult = {
@@ -703,23 +809,17 @@ function performCalculation(oldCodes, newCode) {
         newCode: newCode
     };
     
-    // 顯示分析介面
     document.getElementById('analysisSection').style.display = 'block';
     
-    // 初始化班別選擇器
     const classSelector = document.getElementById('classSelector');
     classSelector.innerHTML = '';
     classes.forEach(c => classSelector.add(new Option(c, c)));
     
-    // 初始化各卡片頂部的微調面版
     buildIndependentFilters();
-    
-    // 渲染各圖表
     redrawAllCharts();
     showStatus("✅ 分析完成！您可利用各圖表上方的選項盒進行即時調整。", "success");
 }
 
-// 建立各圖表獨立微調之 Checkbox 面板
 function buildIndependentFilters() {
     const panels = ['filter-chartImproveRegress', 'filter-chartClassRawLine', 'filter-chartQuadrant', 'filter-dumbbellChart'];
     
@@ -727,7 +827,6 @@ function buildIndependentFilters() {
         const panel = document.getElementById(pId);
         panel.innerHTML = '<span class="fw-bold me-3">🔧 本圖表獨立微調:</span>';
         
-        // 舊評估選項
         currentAnalysisResult.oldCodes.forEach(code => {
             const span = document.createElement('span');
             span.className = 'form-check form-check-inline m-0 me-3';
@@ -738,7 +837,6 @@ function buildIndependentFilters() {
             panel.appendChild(span);
         });
         
-        // 新評估
         const spanNew = document.createElement('span');
         spanNew.className = 'form-check form-check-inline m-0';
         spanNew.innerHTML = `
@@ -749,16 +847,12 @@ function buildIndependentFilters() {
     });
 }
 
-// 微調項目更動時，單獨重繪該圖表
 function onMicroFilterChanged(panelId) {
     const selectedSubject = document.getElementById('subjectSelector').value;
-    
-    // 找出目前該 panel 勾選的評估
     const checkedTicks = Array.from(document.querySelectorAll(`#${panelId} .micro-tick:checked`)).map(el => el.value);
     const checkedOld = checkedTicks.filter(c => c !== currentAnalysisResult.newCode);
     const baseNew = currentAnalysisResult.newCode;
     
-    // 根據不同面板呼叫不同的單一繪圖函數
     if (panelId === 'filter-chartImproveRegress') {
         renderImproveRegressChart(selectedSubject, checkedOld, baseNew);
     } else if (panelId === 'filter-chartClassRawLine') {
@@ -770,21 +864,19 @@ function onMicroFilterChanged(panelId) {
     }
 }
 
-// 整合全圖表渲染
 function redrawAllCharts() {
     const subj = document.getElementById('subjectSelector').value;
     const oldCodes = currentAnalysisResult.oldCodes;
     const newCode = currentAnalysisResult.newCode;
     
     renderImproveRegressChart(subj, oldCodes, newCode);
-    renderDistributionChart(subj, newCode); // 固定的新成績分佈
+    renderDistributionChart(subj, newCode);
     renderClassRawTrendLine(subj, oldCodes, newCode);
     renderQuadrantChart(subj, oldCodes, newCode);
     renderDetailDumbbellChart();
     renderMultiSubjectAttentionTable();
 }
 
-// --- 📊 繪圖實作 1: 進步/退步人數 (Bar) ---
 function renderImproveRegressChart(subj, oldCodes, newCode) {
     const students = currentAnalysisResult.students;
     const classes = currentAnalysisResult.classList;
@@ -799,10 +891,7 @@ function renderImproveRegressChart(subj, oldCodes, newCode) {
         let regress = 0;
         
         students.filter(s => s.class === cls).forEach(s => {
-            // 重算微調後的 Z-Score
             const newZ = s.newScores.z[subj];
-            
-            // 計算微調下的舊 Z 平均
             const oldZList = oldCodes.map(code => s.details[code]?.z[subj]).filter(v => v !== undefined && v !== null);
             const oldZAvg = oldZList.length > 0 ? ss.mean(oldZList) : null;
             
@@ -828,23 +917,17 @@ function renderImproveRegressChart(subj, oldCodes, newCode) {
     });
 }
 
-// --- 📊 繪圖實作 2: 全級成績分佈隊形 vs 常態分佈 (Bins=4) ---
 function renderDistributionChart(subj, newCode) {
     const students = currentAnalysisResult.students;
     const classes = currentAnalysisResult.classList;
-    
-    // 只拿新成績的分數
     const scores = students.map(s => s.newScores.raw[subj]).filter(v => v !== null && !isNaN(v));
     if (scores.length === 0) return;
     
     const mean = ss.mean(scores);
     const std = ss.standardDeviation(scores) || 1;
-    
-    // Bins=4
     const bins = 4;
-    const binSize = 25; // 0-25, 25-50, 50-75, 75-100
+    const binSize = 25;
     const binLabels = ["0-25分", "26-50分", "51-75分", "76-100分"];
-    
     const datasets = [];
     const colors = ['#3182ce', '#dd6b20', '#319795', '#805ad5', '#e53e3e'];
     
@@ -865,9 +948,8 @@ function renderDistributionChart(subj, newCode) {
         });
     });
     
-    // 常態分佈線
     const normalLineData = binLabels.map((_, bIdx) => {
-        const x = bIdx * binSize + 12.5; // 中間值
+        const x = bIdx * binSize + 12.5;
         const normalProb = (Math.exp(-0.5 * Math.pow((x - mean) / std, 2)) / (std * Math.sqrt(2 * Math.PI)));
         return normalProb * scores.length * binSize;
     });
@@ -893,12 +975,9 @@ function renderDistributionChart(subj, newCode) {
     });
 }
 
-// --- 📊 繪圖實作 3: 跨評估均分走勢折線圖 ---
 function renderClassRawTrendLine(subj, oldCodes, newCode) {
     const students = currentAnalysisResult.students;
     const classes = currentAnalysisResult.classList;
-    
-    // X 軸順序：舊評估 + 新評估
     const timeline = [...oldCodes, newCode].sort();
     const datasets = [];
     const colors = ['#3182ce', '#dd6b20', '#319795', '#805ad5', '#e53e3e'];
@@ -920,7 +999,6 @@ function renderClassRawTrendLine(subj, oldCodes, newCode) {
         });
     });
     
-    // 全級平均線
     const gradePoints = [];
     timeline.forEach(assessCode => {
         const scores = students.map(s => s.details[assessCode]?.raw[subj]).filter(v => v !== undefined && v !== null);
@@ -948,7 +1026,6 @@ function renderClassRawTrendLine(subj, oldCodes, newCode) {
     });
 }
 
-// --- 📊 繪圖實作 4: 四象限學習狀態圖 ---
 function renderQuadrantChart(subj, oldCodes, newCode) {
     const students = currentAnalysisResult.students;
     const scatterData = [];
@@ -974,10 +1051,10 @@ function renderQuadrantChart(subj, oldCodes, newCode) {
             label: '學生分佈',
             data: scatterData,
             backgroundColor: scatterData.map(d => {
-                if (d.x >= 0 && d.y >= 0) return 'rgba(25, 135, 84, 0.8)';  // 第一象限: 穩步領先
-                if (d.x < 0 && d.y >= 0) return 'rgba(217, 119, 6, 0.8)';  // 第二象限: 逆勢成長
-                if (d.x < 0 && d.y < 0) return 'rgba(220, 53, 69, 0.8)';   // 第三象限: 雙重落後
-                return 'rgba(107, 114, 128, 0.8)';                         // 第四象限: 警訊高分
+                if (d.x >= 0 && d.y >= 0) return 'rgba(25, 135, 84, 0.8)';
+                if (d.x < 0 && d.y >= 0) return 'rgba(217, 119, 6, 0.8)';
+                if (d.x < 0 && d.y < 0) return 'rgba(220, 53, 69, 0.8)';
+                return 'rgba(107, 114, 128, 0.8)';
             }),
             pointRadius: 6
         }]
@@ -1011,7 +1088,6 @@ function renderQuadrantChart(subj, oldCodes, newCode) {
     });
 }
 
-// --- 📊 繪圖實作 5: 經典啞鈴圖 (詳細學生成績) ---
 function renderDetailDumbbellChart() {
     const selectedClass = document.getElementById('classSelector').value;
     const subj = document.getElementById('subjectSelector').value;
@@ -1019,16 +1095,12 @@ function renderDetailDumbbellChart() {
     
     const filterTicks = Array.from(document.querySelectorAll('#filter-dumbbellChart .micro-tick:checked')).map(el => el.value);
     const checkedOld = filterTicks.filter(c => c !== currentAnalysisResult.newCode);
-    const newCode = currentAnalysisResult.newCode;
     
     let classStudents = currentAnalysisResult.students.filter(s => s.class === selectedClass).map(s => {
         const newRaw = s.newScores.raw[subj];
-        
-        // 微調下的舊均分
         const oldRawList = checkedOld.map(code => s.details[code]?.raw[subj]).filter(v => v !== undefined && v !== null);
         const oldRawAvg = oldRawList.length > 0 ? ss.mean(oldRawList) : null;
         
-        // 微調下的 Z-Score 變化
         const newZ = s.newScores.z[subj];
         const oldZList = checkedOld.map(code => s.details[code]?.z[subj]).filter(v => v !== undefined && v !== null);
         const oldZAvg = oldZList.length > 0 ? ss.mean(oldZList) : null;
@@ -1042,7 +1114,6 @@ function renderDetailDumbbellChart() {
         };
     }).filter(s => s.newRaw !== null && s.oldRaw !== null);
     
-    // 排序
     if (sortVal === 'new_score_desc') classStudents.sort((a,b) => b.newRaw - a.newRaw);
     else if (sortVal === 'old_score_desc') classStudents.sort((a,b) => b.oldRaw - a.oldRaw);
     else if (sortVal === 'diff_desc') classStudents.sort((a,b) => b.diff - a.diff);
@@ -1076,7 +1147,6 @@ function renderDetailDumbbellChart() {
             showarrow: true, arrowhead: 2, arrowsize: 1, arrowwidth: 2, arrowcolor: color
         });
         
-        // 數值標籤
         annotations.push({
             x: Math.max(s.oldRaw, s.newRaw) + 2.5, y: names[idx],
             xref: 'x', yref: 'y', text: `${s.newRaw.toFixed(0)}分 (${s.diff >= 0 ? '+' : ''}${s.diff.toFixed(2)})`,
@@ -1098,7 +1168,6 @@ function renderDetailDumbbellChart() {
     Plotly.newPlot('chartDetailRawScore', [traceOld, traceNew], layout, { displayModeBar: false });
 }
 
-// --- 📊 實作 6: 重點關注 - 全科相對退步 (中+英+數) ---
 function renderMultiSubjectAttentionTable() {
     const students = currentAnalysisResult.students;
     const oldCodes = currentAnalysisResult.oldCodes;
@@ -1118,11 +1187,10 @@ function renderMultiSubjectAttentionTable() {
             if (newZ !== null && oldZAvg !== null) {
                 diffs[subj] = newZ - oldZAvg;
             } else {
-                diffs[subj] = 0; // 無資料視為 0
+                diffs[subj] = 0;
             }
         });
         
-        // 中、英、數全科退步
         if (diffs['chi_read'] < 0 && diffs['eng_read'] < 0 && diffs['math'] < 0) {
             dangerList.push({
                 name: s.name,
@@ -1134,7 +1202,6 @@ function renderMultiSubjectAttentionTable() {
         }
     });
     
-    // 依退步幅度排序
     dangerList.sort((a,b) => (a.chi+a.eng+a.math) - (b.chi+b.eng+b.math));
     
     if (dangerList.length === 0) {
@@ -1154,7 +1221,13 @@ function renderMultiSubjectAttentionTable() {
     }
 }
 
-// --- 📸 下載 Canvas 圖表功能 ---
+const showStatus = (message, type = 'info') => {
+    const statusEl = document.getElementById('status');
+    statusEl.style.display = 'block';
+    statusEl.textContent = message;
+    statusEl.className = `alert alert-${type} text-center`;
+};
+
 window.downloadChart = function(canvasId) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
