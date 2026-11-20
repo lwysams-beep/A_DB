@@ -458,7 +458,7 @@
                 }
             });
             
-            if (Object.keys(processedData).length === 0) { alert("⚠️ 分析完成，但沒有產生任何數據！"); return; }
+            if (Object.keys(processedData).length === 0) { alert("⚠️ 分析完成，但沒有產生 any 數據！"); return; }
 
             classStats = {};
             const sortedClasses = Array.from(classesFound).sort();
@@ -808,7 +808,16 @@
                 const sel = document.getElementById(id); sel.innerHTML = '';
                 if(id==='dbColGender') sel.add(new Option('沒有性別欄','-1'));
                 headers.forEach((h,i) => sel.add(new Option(`[${i}] ${h}`, i)));
-                const found = headers.findIndex(h => keys.some(k => String(h).toLowerCase().includes(k.toLowerCase())));
+                
+                // Prioritize exact or precise matches to avoid mapping "英文姓名" before "中文姓名"
+                let found = -1;
+                found = headers.findIndex(h => keys.some(k => String(h).trim().toLowerCase() === k.toLowerCase()));
+                if (found === -1) {
+                    for (let k of keys) {
+                        found = headers.findIndex(h => String(h).toLowerCase().includes(k.toLowerCase()));
+                        if (found !== -1) break;
+                    }
+                }
                 sel.value = id==='dbColGender' ? (found >= 0 ? String(found) : '-1') : (found >= 0 ? found : 0);
             });
         };
@@ -890,7 +899,7 @@
         window.getAssessmentCohortYear = function(a) {
             const meta = a?.meta || {};
             const id = String(a?.id || meta.assessmentId || '');
-            const yearRaw = String(meta.schoolYear || id.match(/^(\\d{2,4})/)?.[1] || '');
+            const yearRaw = String(meta.schoolYear || id.match(/^\d{2,4}/)?.[1] || '');
             const gradeRaw = String(meta.grade || id.match(/P([1-6])/i)?.[1] || '');
             const gradeNum = Number(String(gradeRaw).replace(/[^0-9]/g, ''));
             let schoolYear = Number(yearRaw);
@@ -910,17 +919,17 @@
                 sources.sort((a,b) => dbAssessmentSort({id:a},{id:b}));
                 const latestId = sources[sources.length - 1];
                 const found = dbAssessments.find(a => a.id === latestId);
-                if (found) return String(found.schoolYear || found.id.match(/^\\d{2,4}/)?.[0] || '');
-                return String(latestId.match(/^\\d{2,4}/)?.[0] || '');
+                if (found) return String(found.schoolYear || found.id.match(/^\d{2,4}/)?.[0] || '');
+                return String(latestId.match(/^\d{2,4}/)?.[0] || '');
             }
-            const years = dbAssessments.map(a => String(a.schoolYear || a.id.match(/^\\d{2,4}/)?.[0] || '')).filter(Boolean);
+            const years = dbAssessments.map(a => String(a.schoolYear || a.id.match(/^\d{2,4}/)?.[0] || '')).filter(Boolean);
             years.sort((a,b) => Number(b)-Number(a));
             return years[0] || '';
         };
 
         window.getCurrentYearAssessments = function() {
             const year = window.getCurrentSchoolYearKey();
-            return dbAssessments.filter(a => String(a.schoolYear || a.id.match(/^\\d{2,4}/)?.[0] || '') === year)
+            return dbAssessments.filter(a => String(a.schoolYear || a.id.match(/^\d{2,4}/)?.[0] || '') === year)
                 .sort(dbAssessmentSort);
         };
 
@@ -1076,7 +1085,7 @@
                 });
             }
             if(!validOldIds.length || !validNewIds.length) {
-                msg.textContent=`已選「${String((selectedCohort%100+100)%100).padStart(2,'0')}年入學」。請在該屆考試中，分別選取至少一次舊成績及新成績。`;
+                msg.textContent=`已選「${String((selectedCohort%100+100)%100).padStart(2,'0')}年入學目標」。請在該屆考試中，分別選取至少一次舊成績及新成績。`;
                 return;
             }
             const recordRoster = new Map();
@@ -1109,7 +1118,6 @@
 
             // ==========================================
             // ✨ SYSTEM 1 (v11) CORE FORMULA INTEGRATION ✨
-            // Calculate Z-Score for EACH assessment and subject first, then average them.
             // ==========================================
             const assessmentStats = {};
             allIds.forEach(id => {
@@ -1128,7 +1136,6 @@
                 });
             });
 
-            // Helper to calculate average Z-score across specific assessment IDs
             const avgZFor = (reg, ids, sub) => {
                 const zScores = ids.map(id => {
                     const studentRec = maps[id]?.get(reg);
@@ -1166,7 +1173,6 @@
                 return s;
             });
 
-            // For reporting global mean averages (using raw scores)
             const globalMeans={};
             ['chi','eng','math'].forEach(sub=>{
                 const ov=students.map(s=>s[sub].old).filter(Number.isFinite);
@@ -1200,106 +1206,11 @@
             window.renderMultiYearCharts();
         };
 
-        window.renderMultiYearCharts = function() {
-            const r=multiAnalysisResult; if(!r) return;
-            const sub=document.getElementById('multiSubjectSelect').value;
-            const classes=r.classes;
-            const lineTraces=classes.map(cls=>{
-                const group=r.students.filter(s=>s.cls===cls);
-                return {x:r.allIds.map(id=>id),y:r.allIds.map(id=>{
-                    const vals=group.map(s=>r.maps[id]?.get(s.reg)?.[sub]).filter(Number.isFinite);
-                    return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:null;
-                }),mode:'lines+markers',name:cls,line:{width:2},connectgaps:false};
-            });
-            lineTraces.push({x:r.allIds,y:r.allIds.map(id=>{
-                const vals=r.roster.map(s=>r.maps[id]?.get(s.reg)?.[sub]).filter(Number.isFinite);
-                return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:null;
-            }),mode:'lines+markers',name:'全級平均',line:{color:'#333',width:4,dash:'dot'},marker:{size:9,symbol:'diamond'}});
-            const labels=r.allIds.map(id=>id);
-            const trendClass=document.getElementById('multiTrendClass');
-            const prevTrendClass=trendClass.value;
-            trendClass.innerHTML='<option value="">-- 選擇班別 --</option>'+classes.map(c=>`<option value="${dbEscape(c)}">${dbEscape(c)}</option>`).join('');
-            if(classes.includes(prevTrendClass)) trendClass.value=prevTrendClass; else if(classes.length) trendClass.value=classes[0];
-            const qClass=document.getElementById('multiQuadrantClass');
-            const prevQClass=qClass.value;
-            qClass.innerHTML='<option value="">-- 選擇班別 --</option>'+classes.map(c=>`<option value="${dbEscape(c)}">${dbEscape(c)}</option>`).join('');
-            if(classes.includes(prevQClass)) qClass.value=prevQClass; else if(classes.length) qClass.value=classes[0];
-            document.getElementById('multiQuadrantSubject').value=sub;
-            window.updateMultiTrendStudentOptions();
-            window.renderMultiTrendChart();
-            window.renderMultiQuadrantAndAttention();
-
-            const barImp={x:classes,y:classes.map(c=>r.classStats[c][sub].improved),name:'相對進步',type:'bar',marker:{color:'#2ca02c'}};
-            const barReg={x:classes,y:classes.map(c=>r.classStats[c][sub].regressed),name:'相對退步',type:'bar',marker:{color:'#d62728'}};
-            Plotly.newPlot('chart-bar-multi',[barImp,barReg],{barmode:'group',margin:{t:30,l:45,r:20,b:80},xaxis:{tickangle:-25},legend:{orientation:'h',y:1.12}},{responsive:true});
-
-            const risk=r.students.filter(s=>{
-                const vals=['chi','eng','math'].map(k=>s[k].diff);
-                const valid=vals.filter(Number.isFinite);
-                return valid.length>=2 && valid.every(v=>v < -0.5);
-            });
-            document.querySelector('#multiRiskTable tbody').innerHTML=risk.map(s=>`<tr><td>${dbEscape(s.cls)}</td><td>${dbEscape(s.classNum||'-')}</td><td>${dbEscape(s.name)}</td>${['chi','eng','math'].map(k=>`<td class="risk-val">${Number.isFinite(s[k].diff)?s[k].diff.toFixed(1):'—'}</td>`).join('')}</tr>`).join('') || '<tr><td colspan="6">沒有符合條件的學生</td></tr>';
-            window.renderMultiRankings();
-            const classSelect=document.getElementById('multiDetailClass');
-            const previous=classSelect.value;
-            classSelect.innerHTML='<option value="">-- 選擇班別 --</option>'+classes.map(c=>`<option value="${dbEscape(c)}">${dbEscape(c)}</option>`).join('');
-            if(classes.includes(previous)) classSelect.value=previous; else if(classes.length) classSelect.value=classes[0];
-            window.drawMultiDetailChart();
-        };
-
-        window.updateMultiTrendStudentOptions = function() {
-            const r=multiAnalysisResult;if(!r)return;
-            const cls=document.getElementById('multiTrendClass').value;
-            const sel=document.getElementById('multiTrendStudents');
-            const old=[...sel.selectedOptions].map(o=>o.value);
-            const group=r.students.filter(s=>s.cls===cls).slice().sort((a,b)=>(a.classNum||0)-(b.classNum||0));
-            sel.innerHTML=group.map(s=>`<option value="${dbEscape(s.reg)}" ${old.includes(s.reg)?'selected':''}>${dbEscape(s.classNum||'-')} ${dbEscape(s.name)}</option>`).join('');
-            window.renderMultiTrendChart();
-        };
-
-        window.renderMultiTrendChart = function() {
-            const r=multiAnalysisResult;if(!r)return;
-            const mode=document.getElementById('multiTrendMode').value;
-            const cls=document.getElementById('multiTrendClass').value;
-            const sub=document.getElementById('multiSubjectSelect').value;
-            const ids=r.allIds;
-            const traces=[];
-            const meanFor=(students,id)=>{
-                const vals=students.map(s=>r.maps[id]?.get(s.reg)?.[sub]).filter(Number.isFinite);
-                return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:null;
-            };
-            if(mode==='class') {
-                r.classes.forEach(c=>{
-                    const group=r.students.filter(s=>s.cls===c);
-                    traces.push({x:ids,y:ids.map(id=>meanFor(group,id)),mode:'lines+markers',name:c,connectgaps:false,line:{width:2}});
-                });
-                traces.push({x:ids,y:ids.map(id=>meanFor(r.roster,id)),mode:'lines+markers',name:'全級平均',line:{color:'#222',width:4,dash:'dot'},marker:{symbol:'diamond',size:9}});
-            } else if(mode==='gender') {
-                const group=r.students.filter(s=>s.cls===cls);
-                const genders=[['男', ['男','M','MALE','BOY']],['女',['女','F','FEMALE','GIRL']]];
-                genders.forEach(([label,aliases],i)=>{
-                    const subset=group.filter(s=>{const g=String(s.gender||'').trim().toUpperCase();return aliases.includes(g)||(label==='男'&&(g.includes('男')||g==='MALE'))||(label==='女'&&(g.includes('女')||g==='FEMALE'));});
-                    if(subset.length) traces.push({x:ids,y:ids.map(id=>meanFor(subset,id)),mode:'lines+markers',name:`${label}生（${subset.length}人）`,line:{width:3}});
-                });
-                const unknown=group.filter(s=>!String(s.gender||'').trim());
-                if(unknown.length) traces.push({x:ids,y:ids.map(id=>meanFor(unknown,id)),mode:'lines+markers',name:`性別未填（${unknown.length}人）`,line:{width:2,dash:'dot'}});
-            } else {
-                const group=r.students.filter(s=>s.cls===cls);
-                const selected=mode==='all'?group:[...document.getElementById('multiTrendStudents').selectedOptions].map(o=>group.find(s=>s.reg===o.value)).filter(Boolean);
-                selected.forEach(st=>{
-                    traces.push({x:ids,y:ids.map(id=>{const v=r.maps[id]?.get(st.reg)?.[sub];return Number.isFinite(v)?v:null;}),mode:'lines+markers',name:`${st.classNum||'-'} ${st.name}`,line:{width:mode==='all'?1.2:2},opacity:mode==='all'?0.55:1,connectgaps:false});
-                });
-            }
-            const title=mode==='class'?'各班平均分走勢':mode==='gender'?`${cls} 男女平均分走勢`:mode==='all'?`${cls} 全班學生個別成績走勢`:`${cls} 指定學生個別成績走勢`;
-            Plotly.react('chart-line-multi',traces,{title,margin:{t:55,l:50,r:30,b:110},xaxis:{title:'考試時間點',tickangle:-25,type:'category'},yaxis:{title:'平均分',rangemode:'tozero'},legend:{orientation:'h',y:-0.3},hovermode:'x unified'},{responsive:true});
-        };
-
         window.renderMultiQuadrantAndAttention = function() {
             const r=multiAnalysisResult;if(!r)return;
             const cls=document.getElementById('multiQuadrantClass').value;
             const sub=document.getElementById('multiQuadrantSubject').value;
             
-            // Filter students in class having both valid old and new Z-score averages (Computed by System 1 method)
             const group=r.students.filter(s=>s.cls===cls&&Number.isFinite(s[sub].oldZ)&&Number.isFinite(s[sub].newZ)).map(s=>{
                 return {
                     ...s,
@@ -1495,7 +1406,7 @@
 <div id="main-app">
     <div class="container">
         <div class="header-controls">
-            <h1>📊 全級學術成績分析系統 <span id="currentGradeBadge" class="grade-badge">P1</span></h1>
+            <h1>📊 全級學術成績 analysis系統 <span id="currentGradeBadge" class="grade-badge">P1</span></h1>
             <div style="text-align: right;">
                 <span id="user-email-display" style="font-size: 0.9em; color: #555; margin-right: 10px;"></span>
                 <button class="logout-btn" onclick="window.performLogout()">登出</button>
