@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>跨年度學籍 Z-Score 智慧多維分析系統 (v19.0 - 鐘形連動與雙均分完整版)</title>
+    <title>跨年度學籍 Z-Score 智慧多維分析系統 (v20.0 - 終極大數據旗艦版)</title>
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Chart.js & Plugins -->
@@ -60,7 +60,7 @@
         .ranking-table th { background-color: #1a365d !important; color: white !important; font-weight: bold; font-size: 0.85rem; }
         .ranking-table td { font-size: 0.85rem; }
         .hover-row { cursor: pointer; transition: background-color 0.15s ease-in-out; }
-        .hover-row:hover { background-color: #e2e8f0 !important; }
+        .hover-row:hover { background-color: #edf2f7 !important; }
     </style>
 </head>
 <body>
@@ -83,7 +83,7 @@
         <div></div>
         <div class="text-center">
             <h1 class="fw-bold text-primary mb-1">📊 跨年度 Z-Score 智慧多維分析系統</h1>
-            <p class="text-muted mb-0">v19.0 - 常態鐘形連動、雙均分線、8欄對照標準版</p>
+            <p class="text-muted mb-0">v20.0 - 鐘形常模連動、35分地板篩選、8欄對照旗艦版</p>
         </div>
         <div class="text-end">
             <span id="user-role-badge" class="badge me-2"></span>
@@ -315,7 +315,7 @@
             </div>
         </div>
 
-        <!-- 第一部分全級成績分佈隊形圖移至此處全寬展示 -->
+        <!-- 第一部分全級成績分佈隊形圖全寬展示 -->
         <div class="card shadow-sm mb-4">
             <div class="card-header bg-white d-flex justify-content-between align-items-center">
                 <span class="text-primary fs-5">第一部分：全級成績分佈隊形 vs 常態分佈線 (分班堆疊顯示)</span>
@@ -454,7 +454,38 @@
             </div>
         </div>
 
-        <!-- 區塊四：第四部分 - 學生成績詳細分析 (經典模式啞鈴圖) -->
+        <!-- 🌟 區塊六：方案 3 獨立化 - 基礎能力監測名單 (成績 < 35分 地板群組) -->
+        <div class="card shadow-sm mb-4 border-start border-warning border-4">
+            <div class="card-header bg-warning text-dark fw-bold d-flex justify-content-between align-items-center">
+                <span>⚠️ 基礎能力監測名單 (成績 &lt; 35分 地板猜測區獨立追蹤 - 不參與 ΔZ 排行)</span>
+                <span class="badge bg-dark" id="floorCountBadge">0 人</span>
+            </div>
+            <div class="card-body p-0">
+                <div class="p-2 bg-light small text-muted">
+                    * 註：該群組學生因原始分數處於猜測盲區 (&lt; 35分)，統計上的常模浮動不足以證明實質進步或退步。已從排行榜獨立列出，供進行第 3 層補救教學個案診斷。
+                </div>
+                <div class="table-responsive" style="max-height: 350px;">
+                    <table class="table table-hover table-sm text-center align-middle mb-0 ranking-table">
+                        <thead class="table-light">
+                            <tr>
+                                <th>學號</th>
+                                <th>班別</th>
+                                <th>姓名</th>
+                                <th>性別</th>
+                                <th>大中細B</th>
+                                <th>舊成績 (平均)</th>
+                                <th>新成績</th>
+                                <th>分數淨變動</th>
+                                <th>🎯 診斷與教學支援建議</th>
+                            </tr>
+                        </thead>
+                        <tbody id="floorMonitoringBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- 區塊七：第四部分 - 學生成績詳細分析 (經典模式啞鈴圖) -->
         <div class="card shadow-sm mb-4">
             <div class="card-header bg-white">
                 <div class="d-flex justify-content-between align-items-center flex-wrap g-2">
@@ -493,6 +524,15 @@ let activeNewAssess = null;
 let chartInstances = {};
 let parsedTempRegistryRows = null;
 let parsedTempScoreRows = null;
+let rankingStudentsList = [];
+
+const SUBJECT_KEYS = {
+    'chi_read': ['中讀', '中文閱讀', '閱讀'],
+    'chi_dict': ['中默', '中文默書', '默書'],
+    'eng_read': ['英讀', '英文閱讀', 'reading'],
+    'eng_dict': ['英默', '英文默書', 'dictation'],
+    'math': ['數學', 'maths', 'mathematics']
+};
 
 // --- Firebase 登入狀態監控 ---
 window.addEventListener('firebaseReady', () => {
@@ -1343,7 +1383,6 @@ function renderDetailDumbbellChart() {
         });
     });
     
-    // 計算舊全級平均與新全級平均
     const newStats = currentAnalysisResult.statsMap[currentAnalysisResult.newCode][subj];
     const newGradeMean = newStats ? newStats.mean : 50;
     
@@ -1355,7 +1394,6 @@ function renderDetailDumbbellChart() {
     });
     const oldGradeMean = oldMeans.length > 0 ? ss.mean(oldMeans) : 50;
     
-    // 加入兩條平均線文字標籤
     annotations.push({
         x: oldGradeMean, y: 1.02, xref: 'x', yref: 'paper',
         text: `舊全級均分: ${oldGradeMean.toFixed(1)}分`,
@@ -1373,9 +1411,7 @@ function renderDetailDumbbellChart() {
         xaxis: { title: '原始分數 (分)', range: [0, 105], gridcolor: '#edf2f7' },
         yaxis: { autorange: 'reversed', gridcolor: '#f7fafc' },
         shapes: [
-            // 舊全級平均灰虛線
             { type: 'line', x0: oldGradeMean, x1: oldGradeMean, y0: 0, y1: 1, xref: 'x', yref: 'paper', line: { color: '#a0aec0', width: 2, dash: 'dot' } },
-            // 新全級平均紅虛線
             { type: 'line', x0: newGradeMean, x1: newGradeMean, y0: 0, y1: 1, xref: 'x', yref: 'paper', line: { color: 'rgba(220, 53, 69, 0.8)', width: 2, dash: 'dash' } }
         ],
         annotations: annotations, showlegend: false, margin: { l: 150, r: 80, t: 80, b: 50 },
@@ -1426,25 +1462,21 @@ function renderMultiSubjectAttentionTable() {
     }
 }
 
-// 8. 鐘形曲線圖 (Bell Shape) 即時連動引擎
-let rankingStudentsList = [];
-
+// 8. 鐘形曲線圖 (Bell Shape) 線性數值精準對齊引擎
 function renderRankingBellCurve(activeStudent = null) {
     const canvas = document.getElementById('chartRankingBell');
     if (!canvas) return;
     
-    const xPoints = [];
-    const bellPoints = [];
-    for (let z = -3.5; z <= 3.5; z += 0.1) {
-        xPoints.push(parseFloat(z.toFixed(2)));
+    const bellData = [];
+    for (let z = -3.5; z <= 3.5; z += 0.05) {
         const y = (1 / Math.sqrt(2 * Math.PI)) * Math.exp(-0.5 * z * z);
-        bellPoints.push(y);
+        bellData.push({ x: parseFloat(z.toFixed(2)), y: y });
     }
     
     const datasets = [
         {
             label: '全級常模分佈 (Bell Curve)',
-            data: bellPoints,
+            data: bellData,
             borderColor: '#3182ce',
             borderWidth: 2.5,
             fill: true,
@@ -1462,32 +1494,40 @@ function renderRankingBellCurve(activeStudent = null) {
         const oldZ = activeStudent.oldZ;
         const newZ = activeStudent.newZ;
         
-        annotations.oldMarker = {
-            type: 'line', xMin: oldZ, xMax: oldZ,
-            borderColor: '#e53e3e', borderWidth: 2.5,
-            label: {
-                display: true,
-                content: `舊成績: Z=${oldZ.toFixed(2)} (${activeStudent.oldRaw.toFixed(1)}分)`,
-                position: 'start', backgroundColor: 'rgba(229, 62, 62, 0.85)', color: '#fff', font: { size: 11, weight: 'bold' }
-            }
-        };
+        if (oldZ !== null && !isNaN(oldZ)) {
+            annotations.oldMarker = {
+                type: 'line', xMin: oldZ, xMax: oldZ,
+                borderColor: '#e53e3e', borderWidth: 3,
+                label: {
+                    display: true,
+                    content: `舊成績: Z=${oldZ.toFixed(2)} (${activeStudent.oldRaw.toFixed(1)}分)`,
+                    position: 'start', backgroundColor: 'rgba(229, 62, 62, 0.9)', color: '#fff', font: { size: 11, weight: 'bold' }
+                }
+            };
+        }
         
-        annotations.newMarker = {
-            type: 'line', xMin: newZ, xMax: newZ,
-            borderColor: '#198754', borderWidth: 2.5,
-            label: {
-                display: true,
-                content: `新成績: Z=${newZ.toFixed(2)} (${activeStudent.newRaw.toFixed(1)}分)`,
-                position: 'end', backgroundColor: 'rgba(25, 135, 84, 0.85)', color: '#fff', font: { size: 11, weight: 'bold' }
-            }
-        };
+        if (newZ !== null && !isNaN(newZ)) {
+            annotations.newMarker = {
+                type: 'line', xMin: newZ, xMax: newZ,
+                borderColor: '#198754', borderWidth: 3,
+                label: {
+                    display: true,
+                    content: `新成績: Z=${newZ.toFixed(2)} (${activeStudent.newRaw.toFixed(1)}分)`,
+                    position: 'end', backgroundColor: 'rgba(25, 135, 84, 0.9)', color: '#fff', font: { size: 11, weight: 'bold' }
+                }
+            };
+        }
         
-        const arrowDirection = newZ >= oldZ ? '躍升 ➔' : '滑落 ➔';
+        const arrowDirection = (newZ !== null && oldZ !== null && newZ >= oldZ) ? '躍升 ➔' : '滑落 ➔';
+        const oldZText = oldZ !== null ? oldZ.toFixed(2) : '缺考';
+        const newZText = newZ !== null ? newZ.toFixed(2) : '缺考';
+        const rankText = activeStudent.oldRank ? `${activeStudent.oldRank}名 ➔ ${activeStudent.newRank}名` : `監測生 (不計名次)`;
+        
         document.getElementById('bellStudentIndicator').innerHTML = `
             🎯 正在檢視學生：<span class="text-primary fs-6">${activeStudent.name} (${activeStudent.class})</span> | 
-            常模軌跡: <span class="badge bg-danger">舊 Z: ${oldZ.toFixed(2)}</span> ${arrowDirection} 
-            <span class="badge bg-success">新 Z: ${newZ.toFixed(2)}</span> | 
-            全級名次: <span class="badge bg-dark">${activeStudent.oldRank}名 ➔ ${activeStudent.newRank}名</span>
+            常模軌跡: <span class="badge bg-danger">舊 Z: ${oldZText}</span> ${arrowDirection} 
+            <span class="badge bg-success">新 Z: ${newZText}</span> | 
+            全級名次: <span class="badge bg-dark">${rankText}</span>
         `;
     } else {
         document.getElementById('bellStudentIndicator').innerHTML = `👉 請將滑鼠移動至下方排行榜中任一學生列，圖表將即時繪製該生的常模躍遷軌跡！`;
@@ -1496,12 +1536,16 @@ function renderRankingBellCurve(activeStudent = null) {
     if (chartInstances['chartRankingBell']) chartInstances['chartRankingBell'].destroy();
     chartInstances['chartRankingBell'] = new Chart(canvas.getContext('2d'), {
         type: 'line',
-        data: { labels: xPoints, datasets },
+        data: { datasets },
         options: {
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-                x: { title: { display: true, text: '標準分數 (Z-Score: -3 到 +3)' } },
+                x: {
+                    type: 'linear', min: -3.5, max: 3.5,
+                    title: { display: true, text: '標準分數 (Z-Score: -3.5 到 +3.5)' },
+                    ticks: { stepSize: 0.5 }
+                },
                 y: { display: false }
             },
             plugins: {
@@ -1512,7 +1556,7 @@ function renderRankingBellCurve(activeStudent = null) {
     });
 }
 
-// 9. 🚀 方案 A & B 標準 8 欄排行榜實作 (支援 Hover 鐘形圖連動)
+// 9. 🚀 方案 3 實裝：35 分地板群組獨立化 + 8 欄標準排行榜
 function renderTop20ProgressRegression(subj, oldCodes, newCode) {
     const students = currentAnalysisResult.students;
     const list = [];
@@ -1528,7 +1572,7 @@ function renderTop20ProgressRegression(subj, oldCodes, newCode) {
         
         if (newZ !== null && oldZAvg !== null && newRaw !== null && oldRawAvg !== null) {
             list.push({
-                name: s.name, class: s.class, regNo: s.regNo,
+                name: s.name, class: s.class, regNo: s.regNo, gender: s.gender, birthGroup: s.birthGroup,
                 zDiff: newZ - oldZAvg,
                 rawDiff: newRaw - oldRawAvg,
                 oldZ: oldZAvg, newZ: newZ,
@@ -1537,34 +1581,49 @@ function renderTop20ProgressRegression(subj, oldCodes, newCode) {
         }
     });
     
-    // 計算舊成績與新成績的名次與 PR
-    const oldSorted = [...list].sort((a,b) => b.oldZ - a.oldZ);
+    // 🌟 核心過濾：方案 3 地板極低分群組 (< 35分) 獨立化
+    const FLOOR_THRESHOLD = 35;
+    const normalList = [];
+    const floorList = [];
+    
     list.forEach(item => {
-        const rIdx = oldSorted.findIndex(x => x.regNo === item.regNo);
-        item.oldRank = rIdx + 1;
-        item.oldPr = Math.round(((list.length - item.oldRank) / list.length) * 100);
+        if (item.newRaw < FLOOR_THRESHOLD || item.oldRaw < FLOOR_THRESHOLD) {
+            floorList.push(item);
+        } else {
+            normalList.push(item);
+        }
     });
     
-    const newSorted = [...list].sort((a,b) => b.newZ - a.newZ);
-    list.forEach(item => {
+    // 計算常模學生在有效名冊中的名次與 PR (排除地板群組後之乾淨常模)
+    const oldSorted = [...normalList].sort((a,b) => b.oldZ - a.oldZ);
+    normalList.forEach(item => {
+        const rIdx = oldSorted.findIndex(x => x.regNo === item.regNo);
+        item.oldRank = rIdx + 1;
+        item.oldPr = Math.round(((normalList.length - item.oldRank) / normalList.length) * 100);
+    });
+    
+    const newSorted = [...normalList].sort((a,b) => b.newZ - a.newZ);
+    normalList.forEach(item => {
         const rIdx = newSorted.findIndex(x => x.regNo === item.regNo);
         item.newRank = rIdx + 1;
-        item.newPr = Math.round(((list.length - item.newRank) / list.length) * 100);
+        item.newPr = Math.round(((normalList.length - item.newRank) / normalList.length) * 100);
         item.rankDiff = item.oldRank - item.newRank;
         item.prDiff = item.newPr - item.oldPr;
     });
     
-    rankingStudentsList = list;
+    rankingStudentsList = [...normalList, ...floorList];
     
-    // 卓越進步前20名
-    list.sort((a,b) => b.zDiff - a.zDiff);
-    const top20 = list.slice(0, 20);
+    // 渲染 A: 卓越進步前20名 (僅限 >= 35分之有效學生)
+    normalList.sort((a,b) => b.zDiff - a.zDiff);
+    const top20 = normalList.slice(0, 20);
     const progressBody = document.getElementById('rankingProgressBody');
     progressBody.innerHTML = top20.map((s, idx) => {
         const rankText = s.rankDiff > 0 ? `(↑${s.rankDiff})` : s.rankDiff < 0 ? `(↓${Math.abs(s.rankDiff)})` : `(持平)`;
         const rankColor = s.rankDiff > 0 ? 'text-success' : s.rankDiff < 0 ? 'text-danger' : 'text-muted';
-        const prArrow = s.prDiff >= 0 ? '↑' : '↓';
-        const rawSign = s.rawDiff >= 0 ? '+' : '';
+        const prArrow = s.prDiff > 0 ? '↑' : s.prDiff < 0 ? '↓' : '';
+        const prText = s.prDiff === 0 ? `PR ${s.oldPr} ➔ PR ${s.newPr} (持平)` : `PR ${s.oldPr} ➔ PR ${s.newPr} (${prArrow} ${Math.abs(s.prDiff)}%)`;
+        const rawSign = s.rawDiff > 0 ? '+' : s.rawDiff < 0 ? '-' : '';
+        const rawColor = s.rawDiff >= 0 ? 'text-success' : 'text-danger';
         
         return `
             <tr class="hover-row" onmouseenter="onHoverStudentRanking('${s.regNo}')" onmouseleave="onLeaveStudentRanking()">
@@ -1573,22 +1632,24 @@ function renderTop20ProgressRegression(subj, oldCodes, newCode) {
                 <td class="fw-bold text-dark">${s.name}</td>
                 <td class="text-success fw-bold">+${s.zDiff.toFixed(2)}</td>
                 <td>${s.oldRank} ➔ ${s.newRank} <small class="${rankColor} fw-bold">${rankText}</small></td>
-                <td class="text-success fw-bold small">PR ${s.oldPr} ➔ PR ${s.newPr} (${prArrow} ${Math.abs(s.prDiff)}%)</td>
+                <td class="text-success fw-bold small">${prText}</td>
                 <td>${s.oldRaw.toFixed(1)} ➔ ${s.newRaw.toFixed(1)}</td>
-                <td class="${s.rawDiff >= 0 ? 'text-success' : 'text-danger'} fw-bold">${rawSign}${s.rawDiff.toFixed(1)}分</td>
+                <td class="${rawColor} fw-bold">${rawSign}${Math.abs(s.rawDiff).toFixed(1)}分</td>
             </tr>
         `;
     }).join('');
     
-    // 重點關懷後20名
-    list.sort((a,b) => a.zDiff - b.zDiff);
-    const bottom20 = list.slice(0, 20);
+    // 渲染 B: 重點關懷後20名 (僅限 >= 35分之有效學生)
+    normalList.sort((a,b) => a.zDiff - b.zDiff);
+    const bottom20 = normalList.slice(0, 20);
     const regressBody = document.getElementById('rankingRegressBody');
     regressBody.innerHTML = bottom20.map((s, idx) => {
         const rankText = s.rankDiff > 0 ? `(↑${s.rankDiff})` : s.rankDiff < 0 ? `(↓${Math.abs(s.rankDiff)})` : `(持平)`;
         const rankColor = s.rankDiff > 0 ? 'text-success' : s.rankDiff < 0 ? 'text-danger' : 'text-muted';
-        const prArrow = s.prDiff >= 0 ? '↑' : '↓';
-        const rawSign = s.rawDiff >= 0 ? '+' : '';
+        const prArrow = s.prDiff > 0 ? '↑' : s.prDiff < 0 ? '↓' : '';
+        const prText = s.prDiff === 0 ? `PR ${s.oldPr} ➔ PR ${s.newPr} (持平)` : `PR ${s.oldPr} ➔ PR ${s.newPr} (${prArrow} ${Math.abs(s.prDiff)}%)`;
+        const rawSign = s.rawDiff > 0 ? '+' : s.rawDiff < 0 ? '-' : '';
+        const rawColor = s.rawDiff >= 0 ? 'text-success' : 'text-danger';
         
         return `
             <tr class="hover-row" onmouseenter="onHoverStudentRanking('${s.regNo}')" onmouseleave="onLeaveStudentRanking()">
@@ -1597,12 +1658,43 @@ function renderTop20ProgressRegression(subj, oldCodes, newCode) {
                 <td class="fw-bold text-dark">${s.name}</td>
                 <td class="text-danger fw-bold">${s.zDiff.toFixed(2)}</td>
                 <td>${s.oldRank} ➔ ${s.newRank} <small class="${rankColor} fw-bold">${rankText}</small></td>
-                <td class="text-danger fw-bold small">PR ${s.oldPr} ➔ PR ${s.newPr} (${prArrow} ${Math.abs(s.prDiff)}%)</td>
+                <td class="text-danger fw-bold small">${prText}</td>
                 <td>${s.oldRaw.toFixed(1)} ➔ ${s.newRaw.toFixed(1)}</td>
-                <td class="${s.rawDiff >= 0 ? 'text-success' : 'text-danger'} fw-bold">${rawSign}${s.rawDiff.toFixed(1)}分</td>
+                <td class="${rawColor} fw-bold">${rawSign}${Math.abs(s.rawDiff).toFixed(1)}分</td>
             </tr>
         `;
     }).join('');
+    
+    // 渲染 C: ⚠️ 基礎能力監測名單 (成績 < 35分 地板群組)
+    document.getElementById('floorCountBadge').innerText = `${floorList.length} 人`;
+    const floorBody = document.getElementById('floorMonitoringBody');
+    floorList.sort((a,b) => a.newRaw - b.newRaw);
+    
+    if (floorList.length === 0) {
+        floorBody.innerHTML = '<tr><td colspan="9" class="text-center text-success py-3">🎉 太好了！全級無低於 35 分的地板群組學生。</td></tr>';
+    } else {
+        floorBody.innerHTML = floorList.map(s => {
+            const rawSign = s.rawDiff > 0 ? '+' : s.rawDiff < 0 ? '-' : '';
+            const rawColor = s.rawDiff >= 0 ? 'text-success' : 'text-danger';
+            let advice = '❌ 處於猜測盲區。建議由科任老師進行個別作答質性診斷。';
+            if (s.rawDiff > 0) advice = '📈 原始分數逆勢提升，但仍處地板區。建議納入抽離補救小組加強基礎。';
+            else if (s.rawDiff < 0) advice = '⚠️ 分數持續下滑且處極低分區。需即時啟動第 3 層學業危機介入支援。';
+            
+            return `
+                <tr class="hover-row" onmouseenter="onHoverStudentRanking('${s.regNo}')" onmouseleave="onLeaveStudentRanking()">
+                    <td class="text-muted small">${s.regNo}</td>
+                    <td class="fw-bold">${s.class}</td>
+                    <td class="fw-bold text-dark">${s.name}</td>
+                    <td>${s.gender}</td>
+                    <td>${s.birthGroup}</td>
+                    <td class="text-muted">${s.oldRaw.toFixed(1)}分</td>
+                    <td class="fw-bold text-danger">${s.newRaw.toFixed(1)}分</td>
+                    <td class="${rawColor} fw-bold">${rawSign}${Math.abs(s.rawDiff).toFixed(1)}分</td>
+                    <td class="text-start small">${advice}</td>
+                </tr>
+            `;
+        }).join('');
+    }
 }
 
 window.onHoverStudentRanking = function(regNo) {
