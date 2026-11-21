@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>跨年度學籍 Z-Score 智慧多維分析系統 (v15.0 - 終極大數據版)</title>
+    <title>跨年度學籍 Z-Score 智慧多維分析系統 (v16.0)</title>
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Chart.js & Plugins -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
-    <!-- Plotly.js (用於高階分佈堆疊圖與啞鈴圖) -->
+    <!-- Plotly.js -->
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <!-- PapaParse -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -48,8 +48,6 @@
         .container { max-width: 1480px; }
         .card { border-radius: 12px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.04); }
         .card-header { border-radius: 12px 12px 0 0 !important; font-weight: bold; }
-        .ranking-thead th { background-color: #1a365d !important; color: white !important; font-weight: normal; padding: 10px; border: 1px solid #e2e8f0; font-size: 0.9rem; }
-        .ranking-table td { border: 1px solid #e2e8f0; padding: 8px; font-size: 0.9rem; }
         .filter-panel { background-color: #edf2f7; border-radius: 8px; padding: 12px; margin-bottom: 12px; font-size: 0.9rem; }
         .btn-download { background-color: #4a5568; color: white; border: none; padding: 4px 12px; font-size: 0.8rem; border-radius: 4px; transition: 0.2s; }
         .btn-download:hover { background-color: #2d3748; }
@@ -58,6 +56,8 @@
         #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1a202c; z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column; }
         .login-box { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); width: 360px; text-align: center; }
         .badge-avg-diff { font-size: 1.1rem; background-color: #e53e3e; color: white; padding: 6px 12px; border-radius: 8px; font-weight: bold; }
+        .stat-card { background: #fff; border-radius: 8px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); text-align: center; }
+        .ranking-table th { background-color: #1a365d !important; color: white !important; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -80,7 +80,7 @@
         <div></div>
         <div class="text-center">
             <h1 class="fw-bold text-primary mb-1">📊 跨年度 Z-Score 智慧多維分析系統</h1>
-            <p class="text-muted mb-0">v15.0 - 欄位智能確認、大中細B性別雙維度交叉分析版</p>
+            <p class="text-muted mb-0">v16.0 - 方案 A&B 排行榜對照、試卷鑑別度與標準差診斷版</p>
         </div>
         <div class="text-end">
             <span id="user-role-badge" class="badge me-2"></span>
@@ -232,23 +232,56 @@
 
     <!-- ===== 📈 智能分析儀表板 ===== -->
     <div id="analysisSection" style="display: none;">
-        <!-- 學科選擇器 -->
-        <div class="card mb-4 shadow-sm">
-            <div class="card-body d-flex justify-content-between align-items-center bg-light">
-                <div>
-                    <label for="subjectSelector" class="form-label fs-5 fw-bold me-2 text-dark">🎯 選擇分析學科：</label>
-                    <select id="subjectSelector" class="form-select form-select-lg w-auto d-inline-block border-primary" onchange="redrawAllCharts()">
-                        <option value="chi_read">中文閱讀</option>
-                        <option value="chi_dict">中文默書</option>
-                        <option value="eng_read">英文閱讀</option>
-                        <option value="eng_dict">英文默書</option>
-                        <option value="math">數學</option>
-                    </select>
+        <!-- 學科選擇器 & 統計診斷面板 -->
+        <div class="row g-3 mb-4">
+            <div class="col-lg-5">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body d-flex flex-column justify-content-center align-items-center bg-light">
+                        <div class="mb-2">
+                            <label for="subjectSelector" class="form-label fs-5 fw-bold text-dark mb-0">🎯 選擇分析學科：</label>
+                            <select id="subjectSelector" class="form-select form-select-lg w-auto d-inline-block border-primary" onchange="redrawAllCharts()">
+                                <option value="chi_read">中文閱讀</option>
+                                <option value="chi_dict">中文默書</option>
+                                <option value="eng_read">英文閱讀</option>
+                                <option value="eng_dict">英文默書</option>
+                                <option value="math">數學</option>
+                            </select>
+                        </div>
+                        <div class="mt-2 text-center">
+                            <span class="text-dark fw-bold me-2">📉 全級原始平均分變動:</span>
+                            <span id="gradeAvgDiffBadge" class="badge-avg-diff">0.0</span>
+                        </div>
+                    </div>
                 </div>
-                <!-- 🚀 全級平均變動顯示區 -->
-                <div>
-                    <span class="text-dark fw-bold me-2">📊 全級平均變動:</span>
-                    <span id="gradeAvgDiffBadge" class="badge-avg-diff">0.0</span>
+            </div>
+            <!-- 試卷品質統計診斷 -->
+            <div class="col-lg-7">
+                <div class="card h-100 shadow-sm border-start border-info border-4">
+                    <div class="card-body">
+                        <h6 class="fw-bold text-dark mb-3">📋 本次試卷常模與品質統計診斷報告 (Ebel 法)</h6>
+                        <div class="row g-2">
+                            <div class="col-4">
+                                <div class="stat-card">
+                                    <div class="small text-muted">全級標準差 ($\sigma$)</div>
+                                    <div id="stat_sd" class="fs-4 fw-bold text-primary">-</div>
+                                    <div id="stat_sd_label" class="badge bg-secondary small mt-1">-</div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="stat-card">
+                                    <div class="small text-muted">試卷鑑別度 ($D$)</div>
+                                    <div id="stat_discrimination" class="fs-4 fw-bold text-success">-</div>
+                                    <div id="stat_disc_label" class="badge bg-secondary small mt-1">-</div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="stat-card">
+                                    <div class="small text-muted">全級最高分 / 最低分</div>
+                                    <div id="stat_minmax" class="fs-5 fw-bold text-dark mt-1" style="height: 38px; display: flex; align-items: center; justify-content: center;">-</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -267,7 +300,6 @@
                     </div>
                 </div>
             </div>
-            
             <div class="col-lg-6">
                 <div class="card h-100 shadow-sm">
                     <div class="card-header bg-white d-flex justify-content-between align-items-center">
@@ -318,7 +350,7 @@
                 </div>
             </div>
             <div class="col-lg-5">
-                <div class="card h-100 shadow-sm border-danger">
+                <div class="card h-100 shadow-sm border-start border-danger border-4">
                     <div class="card-header bg-danger text-white fw-bold">⚠️ 第二部分：重點關注 - 全科相對退步 (中+英+數)</div>
                     <div class="card-body p-0">
                         <div class="p-2 bg-light small text-muted">
@@ -332,9 +364,9 @@
                                         <th>姓名</th>
                                         <th>性別</th>
                                         <th>大中細B</th>
-                                        <th>中讀</th>
-                                        <th>英讀</th>
-                                        <th>數學</th>
+                                        <th>中讀變化</th>
+                                        <th>英讀變化</th>
+                                        <th>數學變化</th>
                                     </tr>
                                 </thead>
                                 <tbody id="multiSubjAttentionBody"></tbody>
@@ -345,21 +377,21 @@
             </div>
         </div>
 
-        <!-- 🚀 區塊五：相對進退步頭20名單 (左右並排) -->
+        <!-- 🚀 區塊五：相對進退步頭20名單 (方案A & B 雙軌呈現) -->
         <div class="row g-4 mb-4">
             <div class="col-md-6">
-                <div class="card shadow-sm border-success h-100">
-                    <div class="card-header bg-success text-white fw-bold">🚀 卓越進步排行榜 (Z-Score 增加前20名)</div>
+                <div class="card shadow-sm border-start border-success border-4 h-100">
+                    <div class="card-header bg-success text-white fw-bold">🚀 卓越進步排行榜 (Z-Score 增加前20名 - 方案 A&B 對照)</div>
                     <div class="card-body p-0">
                         <div class="table-responsive">
-                            <table class="table table-hover text-center align-middle mb-0 ranking-table">
-                                <thead class="ranking-thead">
+                            <table class="table table-hover table-sm text-center align-middle mb-0 ranking-table">
+                                <thead class="table-light sticky-top">
                                     <tr>
                                         <th>#</th>
                                         <th>班別</th>
                                         <th>姓名</th>
-                                        <th>Z-Score 變化</th>
-                                        <th>分數淨變動</th>
+                                        <th>🎯 方案 A：相對進步 (Z-Score 變動)</th>
+                                        <th>⚖️ 方案 B：分數變動 (與均分距離變動)</th>
                                     </tr>
                                 </thead>
                                 <tbody id="rankingProgressBody"></tbody>
@@ -369,18 +401,18 @@
                 </div>
             </div>
             <div class="col-md-6">
-                <div class="card shadow-sm border-danger h-100">
-                    <div class="card-header bg-danger text-white fw-bold">📉 重點關懷排行榜 (Z-Score 減少後20名)</div>
+                <div class="card shadow-sm border-start border-danger border-4 h-100">
+                    <div class="card-header bg-danger text-white fw-bold">📉 重點關懷排行榜 (Z-Score 減少後20名 - 方案 A&B 對照)</div>
                     <div class="card-body p-0">
                         <div class="table-responsive">
-                            <table class="table table-hover text-center align-middle mb-0 ranking-table">
-                                <thead class="ranking-thead">
+                            <table class="table table-hover table-sm text-center align-middle mb-0 ranking-table">
+                                <thead class="table-light sticky-top">
                                     <tr>
-                                        <th>倒數</th>
+                                        <th>#</th>
                                         <th>班別</th>
                                         <th>姓名</th>
-                                        <th>Z-Score 變化</th>
-                                        <th>分數淨變動</th>
+                                        <th>🎯 方案 A：相對退步 (Z-Score 變動)</th>
+                                        <th>⚖️ 方案 B：分數變動 (與均分距離變動)</th>
                                     </tr>
                                 </thead>
                                 <tbody id="rankingRegressBody"></tbody>
@@ -430,6 +462,14 @@ let chartInstances = {};
 let parsedTempRegistryRows = null;
 let parsedTempScoreRows = null;
 
+const SUBJECT_KEYS = {
+    'chi_read': ['中讀', '中文閱讀', '閱讀'],
+    'chi_dict': ['中默', '中文默書', '默書'],
+    'eng_read': ['英讀', '英文閱讀', 'reading'],
+    'eng_dict': ['英默', '英文默書', 'dictation'],
+    'math': ['數學', 'maths', 'mathematics']
+};
+
 // --- Firebase 登入狀態監控 ---
 window.addEventListener('firebaseReady', () => {
     window.onAuthStateChanged(window.auth, (user) => {
@@ -462,7 +502,6 @@ window.performLogin = function() {
     const pass = document.getElementById('loginPass').value;
     const msg = document.getElementById('loginMsg');
     const btn = document.getElementById('btnLoginBtn');
-    
     if(!email || !pass) { msg.innerText = "請輸入完整帳號密碼"; return; }
     btn.disabled = true; btn.innerText = "驗證中..."; msg.innerText = "";
     
@@ -552,7 +591,6 @@ function renderAssessmentCheckboxes() {
     });
 }
 
-// 限制交叉分組最多勾選 2 項
 window.enforceDimensionLimit = function(el) {
     const checkedDims = document.querySelectorAll('.group-dimension:checked');
     if (checkedDims.length > 2) {
@@ -564,7 +602,7 @@ window.enforceDimensionLimit = function(el) {
     }
 };
 
-// --- 輔助函數: CSV 自動編碼探測與解析 ---
+// --- 輔助函數: CSV 自動編碼與解析 ---
 function parseCSV(file, callback) {
     const reader = new FileReader();
     reader.onload = function(e) {
@@ -579,28 +617,24 @@ function parseCSV(file, callback) {
     reader.readAsText(file.slice(0, 5000));
 }
 
-// 日期解析函數：輸出出生年與大中細B
+// 1-4月 大B, 5-8月 中B, 9-12月 細B
 function parseDOB(rawStr) {
     if (!rawStr) return { year: '未知', group: '未知' };
     const str = String(rawStr).trim();
     let y = null, m = null;
-    
     if (str.includes('-') || str.includes('/')) {
         const parts = str.split(/[-/]/);
         if (parts[0].length === 4) { y = parseInt(parts[0]); m = parseInt(parts[1]); }
         else if (parts[2] && parts[2].length === 4) { y = parseInt(parts[2]); m = parseInt(parts[1]); }
     }
-    
     if (!m || isNaN(m)) return { year: y ? `${y}年` : '未知', group: '未知' };
     
     let group = '細B (9-12月)';
     if (m >= 1 && m <= 4) group = '大B (1-4月)';
     else if (m >= 5 && m <= 8) group = '中B (5-8月)';
-    
     return { year: y ? `${y}年` : '未知', group: group };
 }
 
-// 性別代碼標準化
 function parseGender(val) {
     if (!val) return '未知';
     const s = String(val).trim().toUpperCase();
@@ -609,7 +643,7 @@ function parseGender(val) {
     return s;
 }
 
-// --- 核心邏輯 2: A. 年度名冊讀取與下拉選單確認 ---
+// --- 數據上載與欄位智能對齊比對 ---
 window.handleRegistryFileSelected = function(fileEl) {
     if (!fileEl.files || fileEl.files.length === 0) return;
     parseCSV(fileEl.files[0], (err, rows) => {
@@ -628,13 +662,11 @@ window.handleRegistryFileSelected = function(fileEl) {
                 el.add(opt);
             });
         };
-        
         populateSelect('mapReg_id', ['*Reg. No.', '學生註冊編號', '註冊編號', '學號']);
         populateSelect('mapReg_name', ['姓名', 'Name', '中文姓名']);
         populateSelect('mapReg_class', ['班別', 'Class', '組']);
         populateSelect('mapReg_dob', ['出生日期', 'DOB', 'Date of Birth']);
         populateSelect('mapReg_gender', ['性別代碼', '性別', 'Gender', 'Sex']);
-        
         document.getElementById('registryMappingArea').style.display = 'block';
     });
 };
@@ -650,11 +682,11 @@ window.commitRegistryUpload = async function() {
     
     if (!colId || !colName || !colClass) { alert("學號、姓名、班別為必選欄位！"); return; }
     
-    showStatus("⏳ 正在建立並寫入官方年度名冊至雲端...", "warning");
+    showStatus("⏳ 正在寫入官方名冊至雲端...", "warning");
     const headers = parsedTempRegistryRows[0].map(h => String(h || '').trim());
     const dataRows = parsedTempRegistryRows.slice(1);
-    
     const registryMap = {};
+    
     dataRows.forEach(row => {
         const regNo = String(row[headers.indexOf(colId)] || '').trim().replace(/#/g, '');
         if (!regNo) return;
@@ -662,23 +694,18 @@ window.commitRegistryUpload = async function() {
         const cls = String(row[headers.indexOf(colClass)] || '').trim();
         const dobRaw = colDob ? row[headers.indexOf(colDob)] : '';
         const genderRaw = colGender ? row[headers.indexOf(colGender)] : '';
-        
         const dobInfo = parseDOB(dobRaw);
-        const gender = parseGender(genderRaw);
-        
-        registryMap[regNo] = { name, class: cls, birthYear: dobInfo.year, birthGroup: dobInfo.group, gender: gender };
+        registryMap[regNo] = { name, class: cls, birthYear: dobInfo.year, birthGroup: dobInfo.group, gender: parseGender(genderRaw) };
     });
     
     const registryDocId = `${year}_${grade}_Registry`;
     await window.setDoc(window.doc(window.db, "StudentRegistry_v2", registryDocId), {
         year: parseInt(year), grade: grade, lastUpdated: new Date().toISOString(), registry: registryMap
     });
-    
     showStatus(`✅ 官方年度名冊建置成功！(共 ${Object.keys(registryMap).length} 位學生)`, "success");
-    alert(`官方名冊儲存成功！\n註冊代號: ${registryDocId}\n總人數: ${Object.keys(registryMap).length}`);
+    alert(`官方名冊儲存成功！\n人數: ${Object.keys(registryMap).length}`);
 };
 
-// --- 核心邏輯 3: B. 成績單讀取與下拉選單確認 ---
 window.handleScoreFileSelected = function(fileEl) {
     if (!fileEl.files || fileEl.files.length === 0) return;
     parseCSV(fileEl.files[0], (err, rows) => {
@@ -697,14 +724,12 @@ window.handleScoreFileSelected = function(fileEl) {
                 el.add(opt);
             });
         };
-        
         populateSelect('mapScore_id', ['*Reg. No.', '學生註冊編號', '學號']);
         populateSelect('mapScore_math', ['數學', 'math']);
         populateSelect('mapScore_chiread', ['中讀', '中文閱讀', '閱讀']);
         populateSelect('mapScore_chidict', ['中默', '中文默書', '默書']);
         populateSelect('mapScore_engread', ['英讀', '英文閱讀', 'reading']);
         populateSelect('mapScore_engdict', ['英默', '英文默書', 'dictation']);
-        
         document.getElementById('scoreMappingArea').style.display = 'block';
     });
 };
@@ -712,22 +737,20 @@ window.handleScoreFileSelected = function(fileEl) {
 window.commitScoreUpload = async function() {
     const code = document.getElementById('inputAssessCode').value.trim();
     const match = code.match(/^(\d+)(P\d)(.+)$/i);
-    if (!match) { alert("評估代號格式必須為如 '26P3T1'"); return; }
+    if (!match) { alert("評估代號格式錯誤，必須如 '26P3T1'"); return; }
     
     const year = parseInt(match[1]);
     const grade = match[2].toUpperCase();
     const term = match[3].toUpperCase();
-    
     const colId = document.getElementById('mapScore_id').value;
-    if (!colId) { alert("必須選擇學號對應欄位！"); return; }
+    if (!colId) { alert("必須選擇學號欄位！"); return; }
     
-    showStatus("⏳ 正在對齊官方名冊並儲存成績單...", "warning");
-    
+    showStatus("⏳ 正在對齊年度官方名冊並儲存成績單...", "warning");
     let registryMap = {};
     try {
         const regSnap = await window.getDoc(window.doc(window.db, "StudentRegistry_v2", `${year}_${grade}_Registry`));
         if (regSnap.exists()) registryMap = regSnap.data().registry;
-    } catch(e) { console.warn("未發現官方名冊，使用純成績表資料。"); }
+    } catch(e) { console.warn("未發現名冊。"); }
     
     const headers = parsedTempScoreRows[0].map(h => String(h || '').trim());
     const dataRows = parsedTempScoreRows.slice(1);
@@ -743,7 +766,6 @@ window.commitScoreUpload = async function() {
         const regNo = String(row[headers.indexOf(colId)] || '').trim().replace(/#/g, '');
         if (!regNo) return;
         const regInfo = registryMap[regNo] || {};
-        
         studentsList.push({
             regNo: regNo,
             name: regInfo.name || '未登錄',
@@ -762,33 +784,26 @@ window.commitScoreUpload = async function() {
     await window.setDoc(window.doc(window.db, "CrossYearScores_v2", code), {
         code, year, grade, term, lastUpdated: new Date().toISOString(), students: studentsList
     });
-    
-    showStatus(`✅ 評估 ${code} 成功儲存！已串聯 ${studentsList.length} 位學童資料。`, "success");
-    alert(`評估成績載入成功！\n代號: ${code}\n總人數: ${studentsList.length}`);
+    showStatus(`✅ 評估 ${code} 成功儲存與名冊關聯！`, "success");
+    alert(`成績單儲存成功！共關聯 ${studentsList.length} 位學生。`);
     onCohortChanged();
 };
 
-// --- 核心邏輯 4: 雙維度交叉分析運算核心 ---
-let currentAnalysisResult = null;
-
+// --- 核心邏輯 4: 多維交叉分析與試卷品質診斷 ---
 window.triggerMainAnalysis = function() {
     const checkedOld = Array.from(document.querySelectorAll('input[name="globalOld"]:checked')).map(el => el.value);
     const selectedNew = document.querySelector('input[name="globalNew"]:checked')?.value;
-    
-    if (!selectedNew) { alert("請至少選擇一個「新成績」作為標準！"); return; }
-    if (checkedOld.length === 0) { alert("請至少選擇一個「舊成績」進行對比！"); return; }
+    if (!selectedNew) { alert("請選擇「新成績」基準！"); return; }
+    if (checkedOld.length === 0) { alert("請選擇「舊成績」進行對比！"); return; }
     
     const selectedDims = Array.from(document.querySelectorAll('.group-dimension:checked')).map(el => el.value);
-    
     activeOldAssess = checkedOld;
     activeNewAssess = selectedNew;
-    
     performCalculation(activeOldAssess, activeNewAssess, selectedDims);
 };
 
 function performCalculation(oldCodes, newCode, selectedDims) {
-    showStatus("⏳ 正在以新名單為母體對齊數據並計算 Z-Score...", "warning");
-    
+    showStatus("⏳ 正在進行數據標準化與試卷鑑別度分析...", "warning");
     const newAssessObj = cohortAssessments.find(a => a.code === newCode);
     const oldAssessObjs = cohortAssessments.filter(a => oldCodes.includes(a.code));
     if (!newAssessObj) { showStatus("❌ 找不到新成績資料", "danger"); return; }
@@ -796,6 +811,7 @@ function performCalculation(oldCodes, newCode, selectedDims) {
     const baseStudents = newAssessObj.students;
     const baseRegs = new Set(baseStudents.map(s => s.regNo));
     
+    // 計算 Z-Score 母體參數 (方法 A)
     const statsMap = {};
     const allInvolved = [newAssessObj, ...oldAssessObjs];
     allInvolved.forEach(assess => {
@@ -879,13 +895,10 @@ function performCalculation(oldCodes, newCode, selectedDims) {
     };
     
     document.getElementById('analysisSection').style.display = 'block';
-    
-    // 初始化詳細群組選擇器
     const groupSel = document.getElementById('groupDetailSelector');
     groupSel.innerHTML = '';
     uniqueGroups.forEach(g => groupSel.add(new Option(g, g)));
     
-    // 初始化四象限班別選擇器
     const quadClassSel = document.getElementById('quadrantClassSelector');
     quadClassSel.innerHTML = '<option value="all">--顯示全級學童--</option>';
     const distinctClasses = [...new Set(baseStudents.map(s => s.class))].sort();
@@ -893,8 +906,7 @@ function performCalculation(oldCodes, newCode, selectedDims) {
     
     buildIndependentFilters();
     redrawAllCharts();
-    
-    showStatus("✅ 多維度交叉分析完成！您可利用圖表微調面板即時調整各項數據。", "success");
+    showStatus("✅ 多維分析與試卷品質診斷完成！", "success");
 }
 
 function buildIndependentFilters() {
@@ -915,7 +927,7 @@ function buildIndependentFilters() {
         spanNew.className = 'form-check form-check-inline m-0';
         spanNew.innerHTML = `
             <input class="form-check-input" type="checkbox" checked disabled>
-            <label class="form-check-label text-success">${currentAnalysisResult.newCode} (新基準)</label>
+            <label class="form-check-label text-success">${currentAnalysisResult.newCode} (新)</label>
         `;
         panel.appendChild(spanNew);
     });
@@ -932,13 +944,46 @@ function onMicroFilterChanged(panelId) {
     else if (panelId === 'filter-dumbbellChart') renderDetailDumbbellChart();
 }
 
+// 試卷品質統計診斷運算
+function runEbelTestDiagnostics(subj, newCode) {
+    const students = currentAnalysisResult.students;
+    const scores = students.map(s => s.newScores.raw[subj]).filter(v => v !== null && !isNaN(v));
+    if (scores.length === 0) return;
+    
+    // 計算標準差
+    const sd = ss.standardDeviation(scores);
+    document.getElementById('stat_sd').innerText = sd.toFixed(1);
+    const sdLabel = document.getElementById('stat_sd_label');
+    if (sd < 8) { sdLabel.innerText = "分數過度集中"; sdLabel.className = "badge bg-warning"; }
+    else if (sd > 18) { sdLabel.innerText = "兩極分化嚴重"; sdLabel.className = "badge bg-danger"; }
+    else { sdLabel.innerText = "常態理想分佈"; sdLabel.className = "badge bg-success"; }
+    
+    // Ebel 27% 極端組鑑別度 D 計算
+    scores.sort((a,b) => b - a);
+    const size27 = Math.max(1, Math.floor(scores.length * 0.27));
+    const highGroup = scores.slice(0, size27);
+    const lowGroup = scores.slice(-size27);
+    const meanHigh = ss.mean(highGroup);
+    const meanLow = ss.mean(lowGroup);
+    const discrimination = (meanHigh - meanLow) / 100; // 假定滿分為100
+    
+    document.getElementById('stat_discrimination').innerText = discrimination.toFixed(2);
+    const discLabel = document.getElementById('stat_disc_label');
+    if (discrimination >= 0.40) { discLabel.innerText = "🌟 優異鑑別度"; discLabel.className = "badge bg-success"; }
+    else if (discrimination >= 0.30) { discLabel.innerText = "良好鑑別度"; discLabel.className = "badge bg-info"; }
+    else if (discrimination >= 0.20) { discLabel.innerText = "鑑別度一般"; discLabel.className = "badge bg-warning"; }
+    else { discLabel.innerText = "❌ 缺乏鑑別度"; discLabel.className = "badge bg-danger"; }
+    
+    document.getElementById('stat_minmax').innerHTML = `最高: <span class="text-success">${ss.max(scores)}分</span><br>最低: <span class="text-danger">${ss.min(scores)}分</span>`;
+}
+
 function redrawAllCharts() {
     const subj = document.getElementById('subjectSelector').value;
     const oldCodes = currentAnalysisResult.oldCodes;
     const newCode = currentAnalysisResult.newCode;
     
-    // 計算學科全級平均變動並更新右上角
     calculateGradeAvgDiff(subj, oldCodes, newCode);
+    runEbelTestDiagnostics(subj, newCode);
     
     renderImproveRegressChart(subj, oldCodes, newCode);
     renderDistributionChart(subj, newCode);
@@ -949,7 +994,6 @@ function redrawAllCharts() {
     renderTop20ProgressRegression(subj, oldCodes, newCode);
 }
 
-// 核心計算：全級平均變動
 function calculateGradeAvgDiff(subj, oldCodes, newCode) {
     const students = currentAnalysisResult.students;
     const newRaws = students.map(s => s.newScores.raw[subj]).filter(v => v !== null && !isNaN(v));
@@ -967,11 +1011,10 @@ function calculateGradeAvgDiff(subj, oldCodes, newCode) {
     }
 }
 
-// 1. 各組別 相對進步 vs 退步（雙棒並排圖）
+// 1. 各群組相對進退步雙棒並排圖
 function renderImproveRegressChart(subj, oldCodes, newCode) {
     const students = currentAnalysisResult.students;
     const groups = currentAnalysisResult.groupList;
-    
     const datasets = [
         { label: '🚀 相對進步 (ΔZ > +0.2)', data: [], backgroundColor: '#198754' },
         { label: '⚖️ 持平穩定 (±0.2Z 內)', data: [], backgroundColor: '#a0aec0' },
@@ -984,7 +1027,6 @@ function renderImproveRegressChart(subj, oldCodes, newCode) {
             const newZ = s.newScores.z[subj];
             const oldZList = oldCodes.map(code => s.details[code]?.z[subj]).filter(v => v !== undefined && v !== null);
             const oldZAvg = oldZList.length > 0 ? ss.mean(oldZList) : null;
-            
             if (newZ !== null && oldZAvg !== null) {
                 const diff = newZ - oldZAvg;
                 if (diff > 0.2) improve++;
@@ -992,23 +1034,18 @@ function renderImproveRegressChart(subj, oldCodes, newCode) {
                 else flat++;
             }
         });
-        datasets[0].data.push(improve);
-        datasets[1].data.push(flat);
-        datasets[2].data.push(regress);
+        datasets[0].data.push(improve); datasets[1].data.push(flat); datasets[2].data.push(regress);
     });
     
     if (chartInstances['chartImproveRegress']) chartInstances['chartImproveRegress'].destroy();
     chartInstances['chartImproveRegress'] = new Chart(document.getElementById('chartImproveRegress').getContext('2d'), {
         type: 'bar',
         data: { labels: groups, datasets },
-        options: {
-            responsive: true,
-            scales: { x: { stacked: false }, y: { beginAtZero: true } }
-        }
+        options: { responsive: true, scales: { x: { stacked: false }, y: { beginAtZero: true } } }
     });
 }
 
-// 2. 全級成績分佈隊形 vs 常態分佈線（Plotly 堆疊展示）
+// 2. 全級分班堆疊常態分佈圖 (Plotly.js 實作)
 function renderDistributionChart(subj, newCode) {
     const students = currentAnalysisResult.students;
     const classes = [...new Set(students.map(s => s.class))].sort();
@@ -1017,11 +1054,9 @@ function renderDistributionChart(subj, newCode) {
     
     const mean = ss.mean(scores);
     const std = ss.standardDeviation(scores) || 1;
-    
-    const binSize = 5; // 提高分辨率如附件圖
+    const binSize = 5;
     const numBins = 20;
     const xBinCenters = Array.from({length: numBins}, (_, i) => i * binSize + binSize / 2);
-    
     const traces = [];
     const colorPalette = ['#3182ce', '#dd6b20', '#319795', '#805ad5', '#e53e3e', '#718096'];
     
@@ -1034,46 +1069,27 @@ function renderDistributionChart(subj, newCode) {
                 yData[binIdx]++;
             }
         });
-        
-        traces.push({
-            x: xBinCenters,
-            y: yData,
-            name: cls,
-            type: 'bar',
-            marker: { color: colorPalette[idx % colorPalette.length] }
-        });
+        traces.push({ x: xBinCenters, y: yData, name: cls, type: 'bar', marker: { color: colorPalette[idx % colorPalette.length] } });
     });
     
-    // 生成常態分佈理論線
-    const normalX = [];
-    const normalY = [];
+    const normalX = []; const normalY = [];
     for (let x = 0; x <= 100; x += 1) {
         normalX.push(x);
         const prob = Math.exp(-0.5 * Math.pow((x - mean) / std, 2)) / (std * Math.sqrt(2 * Math.PI));
         normalY.push(prob * scores.length * binSize);
     }
-    
-    traces.push({
-        x: normalX,
-        y: normalY,
-        name: '常態分佈 (理論)',
-        type: 'scatter',
-        mode: 'lines',
-        line: { color: 'red', width: 2.5 }
-    });
+    traces.push({ x: normalX, y: normalY, name: '常態分佈線', type: 'scatter', mode: 'lines', line: { color: 'red', width: 2.5 } });
     
     const layout = {
         barmode: 'stack',
         xaxis: { title: '分數', range: [0, 105], tickmode: 'linear', tick0: 0, dtick: 10 },
         yaxis: { title: '人數' },
-        margin: { l: 50, r: 30, t: 30, b: 50 },
-        plot_bgcolor: 'white', paper_bgcolor: 'white'
+        margin: { l: 50, r: 30, t: 30, b: 50 }, plot_bgcolor: 'white', paper_bgcolor: 'white'
     };
-    
     Plotly.newPlot('chartDistributionPlotly', traces, layout, { displayModeBar: false });
 }
 
-// 3. 各組別平均分走勢折線圖 (Hover 一鍵聯動)
+// 3. 走勢折線圖
 function renderClassRawTrendLine(subj, oldCodes, newCode) {
     const students = currentAnalysisResult.students;
     const groups = currentAnalysisResult.groupList;
@@ -1102,9 +1118,8 @@ function renderClassRawTrendLine(subj, oldCodes, newCode) {
         type: 'line',
         data: { labels: timeline, datasets },
         options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: { mode: 'index', intersect: false }, // 滑鼠指向時自動列出同評估所有班級數據
+            responsive: true, maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false },
             scales: { y: { title: { display: true, text: '平均分數' } } }
         }
     });
@@ -1121,10 +1136,8 @@ window.renderQuadrantWithFilter = function() {
 function renderQuadrantChart(subj, oldCodes, newCode, filterClass) {
     const students = currentAnalysisResult.students;
     const scatterData = [];
-    
     students.forEach(s => {
         if (filterClass !== 'all' && s.class !== filterClass) return;
-        
         const newZ = s.newScores.z[subj];
         const oldZList = oldCodes.map(code => s.details[code]?.z[subj]).filter(v => v !== undefined && v !== null);
         const oldZAvg = oldZList.length > 0 ? ss.mean(oldZList) : null;
@@ -1133,24 +1146,16 @@ function renderQuadrantChart(subj, oldCodes, newCode, filterClass) {
         }
     });
     
-    const chartData = {
-        datasets: [{
-            label: '學生分佈', data: scatterData,
-            backgroundColor: scatterData.map(d => {
-                if (d.x >= 0 && d.y > 0.2) return '#198754';  // 穩步領先 (綠)
-                if (d.x < 0 && d.y > 0.2) return '#d97706';   // 逆勢成長 (黃)
-                if (d.x < 0 && d.y < -0.2) return '#dc3545';  // 雙重落後 (紅)
-                if (d.x >= 0 && d.y < -0.2) return '#fd7e14'; // 警訊高分 (橘)
-                return '#cbd5e0';                             // 持平波動 (灰)
-            }),
-            pointRadius: 6
-        }]
-    };
-    
     if (chartInstances['chartQuadrant']) chartInstances['chartQuadrant'].destroy();
     chartInstances['chartQuadrant'] = new Chart(document.getElementById('chartQuadrant').getContext('2d'), {
         type: 'scatter',
-        data: chartData,
+        data: {
+            datasets: [{
+                label: '學生分佈', data: scatterData,
+                backgroundColor: scatterData.map(d => (d.x >= 0 && d.y > 0.2) ? '#198754' : (d.x < 0 && d.y > 0.2) ? '#d97706' : (d.x < 0 && d.y < -0.2) ? '#dc3545' : (d.x >= 0 && d.y < -0.2) ? '#fd7e14' : '#cbd5e0'),
+                pointRadius: 6
+            }]
+        },
         options: {
             responsive: true, maintainAspectRatio: false,
             scales: {
@@ -1163,8 +1168,8 @@ function renderQuadrantChart(subj, oldCodes, newCode, filterClass) {
                     annotations: {
                         lineX: { type: 'line', xMin: 0, xMax: 0, borderColor: '#cbd5e0', borderWidth: 1.5 },
                         lineY: { type: 'line', yMin: 0, yMax: 0, borderColor: '#cbd5e0', borderWidth: 1.5 },
-                        flatBandUpper: { type: 'line', yMin: 0.2, yMax: 0.2, borderColor: '#cbd5e0', borderWidth: 1, borderDash: [3,3] },
-                        flatBandLower: { type: 'line', yMin: -0.2, yMax: -0.2, borderColor: '#cbd5e0', borderWidth: 1, borderDash: [3,3] }
+                        flatUpper: { type: 'line', yMin: 0.2, yMax: 0.2, borderColor: '#cbd5e0', borderWidth: 1, borderDash: [3,3] },
+                        flatLower: { type: 'line', yMin: -0.2, yMax: -0.2, borderColor: '#cbd5e0', borderWidth: 1, borderDash: [3,3] }
                     }
                 }
             }
@@ -1172,24 +1177,21 @@ function renderQuadrantChart(subj, oldCodes, newCode, filterClass) {
     });
 }
 
-// 5. 啞鈴圖 (詳細學生成績) - 增加中間值與零線
+// 5. 啞鈴圖
 function renderDetailDumbbellChart() {
     const selGroup = document.getElementById('groupDetailSelector').value;
     const subj = document.getElementById('subjectSelector').value;
     const sortVal = document.getElementById('sortSelector').value;
-    
     const checkedOld = Array.from(document.querySelectorAll('#filter-dumbbellChart .micro-tick:checked')).map(el => el.value);
     
     let gStudents = currentAnalysisResult.students.filter(s => s.groupKey === selGroup).map(s => {
         const newRaw = s.newScores.raw[subj];
         const oldRawList = checkedOld.map(code => s.details[code]?.raw[subj]).filter(v => v !== undefined && v !== null);
         const oldRawAvg = oldRawList.length > 0 ? ss.mean(oldRawList) : null;
-        
         const newZ = s.newScores.z[subj];
         const oldZList = checkedOld.map(code => s.details[code]?.z[subj]).filter(v => v !== undefined && v !== null);
         const oldZAvg = oldZList.length > 0 ? ss.mean(oldZList) : null;
         const diff = (newZ !== null && oldZAvg !== null) ? (newZ - oldZAvg) : 0;
-        
         return { name: s.name, oldRaw: oldRawAvg, newRaw: newRaw, diff: diff };
     }).filter(s => s.newRaw !== null && s.oldRaw !== null);
     
@@ -1220,7 +1222,6 @@ function renderDetailDumbbellChart() {
         });
     });
     
-    // 繪製 Z-Score = 0 的全級均值基準線
     const subjStats = currentAnalysisResult.statsMap[currentAnalysisResult.newCode][subj];
     const gradeMean = subjStats ? subjStats.mean : 50;
     
@@ -1230,17 +1231,15 @@ function renderDetailDumbbellChart() {
         xaxis: { title: '原始分數 (分)', range: [0, 105], gridcolor: '#edf2f7' },
         yaxis: { autorange: 'reversed', gridcolor: '#f7fafc' },
         shapes: [
-            // Z-Score = 0 全級均分紅線
+            // Z-Score = 0 的兩條中線 (此處畫出全級均分參考線)
             { type: 'line', x0: gradeMean, x1: gradeMean, y0: 0, y1: 1, xref: 'x', yref: 'paper', line: { color: 'rgba(220, 53, 69, 0.6)', width: 2, dash: 'dash' } }
         ],
-        annotations: annotations, showlegend: false, margin: { l: 100, r: 80, t: 50, b: 50 },
-        plot_bgcolor: 'white', paper_bgcolor: 'white'
+        annotations: annotations, showlegend: false, margin: { l: 100, r: 80, t: 50, b: 50 }
     };
-    
     Plotly.newPlot('chartDetailRawScore', [traceOld, traceNew], layout, { displayModeBar: false });
 }
 
-// 6. 全科相對退步重點關注名單
+// 6. 重點關注名單
 function renderMultiSubjectAttentionTable() {
     const students = currentAnalysisResult.students;
     const oldCodes = currentAnalysisResult.oldCodes;
@@ -1281,7 +1280,7 @@ function renderMultiSubjectAttentionTable() {
     }
 }
 
-// 7. 🚀 相對進步/ 📉 相對退步 頭20名單
+// 7. 🚀 方案 A (Z-Score 相對進退步) & 方案 B (分數淨變動) 雙排行榜
 function renderTop20ProgressRegression(subj, oldCodes, newCode) {
     const students = currentAnalysisResult.students;
     const list = [];
@@ -1297,39 +1296,78 @@ function renderTop20ProgressRegression(subj, oldCodes, newCode) {
         
         if (newZ !== null && oldZAvg !== null && newRaw !== null && oldRawAvg !== null) {
             list.push({
-                name: s.name,
-                class: s.class,
+                name: s.name, class: s.class,
                 zDiff: newZ - oldZAvg,
-                rawDiff: newRaw - oldRawAvg
+                rawDiff: newRaw - oldRawAvg,
+                oldZ: oldZAvg, newZ: newZ,
+                oldRaw: oldRawAvg, newRaw: newRaw
             });
         }
     });
     
-    // 卓越進步前20名
+    // 計算全級名次與 PR
+    const assignRanksAndPR = (arr, isAscending = false) => {
+        const sorted = [...arr].sort((a, b) => isAscending ? a.newZ - b.newZ : b.newZ - a.newZ);
+        arr.forEach(item => {
+            const rIdx = sorted.findIndex(x => x.name === item.name);
+            item.rank = rIdx + 1;
+            item.pr = Math.round(((arr.length - item.rank) / arr.length) * 100);
+        });
+    };
+    
+    // 計算舊成績的全級名次與 PR
+    const oldSorted = [...list].sort((a,b) => b.oldZ - a.oldZ);
+    list.forEach(item => {
+        const rIdx = oldSorted.findIndex(x => x.name === item.name);
+        item.oldRank = rIdx + 1;
+        item.oldPr = Math.round(((list.length - item.oldRank) / list.length) * 100);
+    });
+    
+    // 計算新成績的全級名次與 PR
+    const newSorted = [...list].sort((a,b) => b.newZ - a.newZ);
+    list.forEach(item => {
+        const rIdx = newSorted.findIndex(x => x.name === item.name);
+        item.newRank = rIdx + 1;
+        item.newPr = Math.round(((list.length - item.newRank) / list.length) * 100);
+    });
+    
+    // A. 卓越進步前20名
     list.sort((a,b) => b.zDiff - a.zDiff);
     const top20 = list.slice(0, 20);
     const progressBody = document.getElementById('rankingProgressBody');
     progressBody.innerHTML = top20.map((s, idx) => `
         <tr>
-            <td>${idx + 1}</td>
+            <td><span class="badge bg-success">${idx + 1}</span></td>
             <td class="fw-bold">${s.class}</td>
-            <td>${s.name}</td>
-            <td class="text-success fw-bold">+${s.zDiff.toFixed(2)}</td>
-            <td class="text-success fw-bold">+${s.rawDiff.toFixed(1)}分</td>
+            <td class="fw-bold text-dark">${s.name}</td>
+            <td class="text-start">
+                <span class="badge bg-success">ΔZ: +${s.zDiff.toFixed(2)}</span><br>
+                <small class="text-muted">全級名次: ${s.oldRank}名 (PR${s.oldPr}) ➔ ${s.newRank}名 (PR${s.newPr})</small>
+            </td>
+            <td class="text-start">
+                <span class="badge bg-primary">淨變動: +${s.rawDiff.toFixed(1)}分</span><br>
+                <small class="text-muted">分數變遷: ${s.oldRaw.toFixed(1)}分 ➔ ${s.newRaw.toFixed(1)}分</small>
+            </td>
         </tr>
     `).join('');
     
-    // 重點關懷後20名
+    // B. 重點關懷後20名
     list.sort((a,b) => a.zDiff - b.zDiff);
     const bottom20 = list.slice(0, 20);
     const regressBody = document.getElementById('rankingRegressBody');
     regressBody.innerHTML = bottom20.map((s, idx) => `
         <tr>
-            <td>${idx + 1}</td>
+            <td><span class="badge bg-danger">${idx + 1}</span></td>
             <td class="fw-bold">${s.class}</td>
-            <td>${s.name}</td>
-            <td class="text-danger fw-bold">${s.zDiff.toFixed(2)}</td>
-            <td class="text-danger fw-bold">${s.rawDiff.toFixed(1)}分</td>
+            <td class="fw-bold text-dark">${s.name}</td>
+            <td class="text-start">
+                <span class="badge bg-danger">ΔZ: ${s.zDiff.toFixed(2)}</span><br>
+                <small class="text-muted">全級名次: ${s.oldRank}名 (PR${s.oldPr}) ➔ ${s.newRank}名 (PR${s.newPr})</small>
+            </td>
+            <td class="text-start">
+                <span class="badge bg-secondary">淨變動: ${s.rawDiff.toFixed(1)}分</span><br>
+                <small class="text-muted">分數變遷: ${s.oldRaw.toFixed(1)}分 ➔ ${s.newRaw.toFixed(1)}分</small>
+            </td>
         </tr>
     `).join('');
 }
