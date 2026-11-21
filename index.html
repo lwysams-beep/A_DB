@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>跨年度學籍 Z-Score 智慧多維分析系統 (v17.0)</title>
+    <title>跨年度學籍 Z-Score 智慧多維分析系統 (v18.0 - 方案A&B標準對照版)</title>
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Chart.js & Plugins -->
@@ -48,6 +48,8 @@
         .container { max-width: 1480px; }
         .card { border-radius: 12px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.04); }
         .card-header { border-radius: 12px 12px 0 0 !important; font-weight: bold; }
+        .ranking-thead th { background-color: #1a365d !important; color: white !important; font-weight: bold; padding: 10px; border: 1px solid #e2e8f0; font-size: 0.85rem; }
+        .ranking-table td { border: 1px solid #e2e8f0; padding: 8px; font-size: 0.85rem; }
         .filter-panel { background-color: #edf2f7; border-radius: 8px; padding: 12px; margin-bottom: 12px; font-size: 0.9rem; }
         .btn-download { background-color: #4a5568; color: white; border: none; padding: 4px 12px; font-size: 0.8rem; border-radius: 4px; transition: 0.2s; }
         .btn-download:hover { background-color: #2d3748; }
@@ -57,8 +59,6 @@
         .login-box { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); width: 360px; text-align: center; }
         .badge-avg-diff { font-size: 1.1rem; background-color: #e53e3e; color: white; padding: 6px 12px; border-radius: 8px; font-weight: bold; }
         .stat-card { background: #fff; border-radius: 8px; padding: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); text-align: center; }
-        .ranking-table th { background-color: #1a365d !important; color: white !important; font-weight: bold; font-size: 0.85rem; }
-        .ranking-table td { font-size: 0.85rem; }
     </style>
 </head>
 <body>
@@ -81,7 +81,7 @@
         <div></div>
         <div class="text-center">
             <h1 class="fw-bold text-primary mb-1">📊 跨年度 Z-Score 智慧多維分析系統</h1>
-            <p class="text-muted mb-0">v17.0 - 兩點走勢、白底輸出、8欄排行榜、學號對照整合版</p>
+            <p class="text-muted mb-0">v18.0 - 兩點對比、白底輸出、8欄排行榜、學號對照整合版</p>
         </div>
         <div class="text-end">
             <span id="user-role-badge" class="badge me-2"></span>
@@ -392,7 +392,7 @@
         <div class="row g-4 mb-4">
             <div class="col-md-6">
                 <div class="card shadow-sm border-start border-success border-4 h-100">
-                    <div class="card-header bg-success text-white fw-bold">🚀 卓越進步排行榜 (Z-Score 增加前20名 - 方案 A&B 對照)</div>
+                    <div class="card-header bg-success text-white fw-bold">🚀 卓越進步排行榜 (Z-Score 前20名)</div>
                     <div class="card-body p-0">
                         <div class="table-responsive">
                             <table class="table table-hover table-sm text-center align-middle mb-0 ranking-table">
@@ -416,7 +416,7 @@
             </div>
             <div class="col-md-6">
                 <div class="card shadow-sm border-start border-danger border-4 h-100">
-                    <div class="card-header bg-danger text-white fw-bold">📉 重點關懷排行榜 (Z-Score 減少後20名 - 方案 A&B 對照)</div>
+                    <div class="card-header bg-danger text-white fw-bold">📉 重點關懷排行榜 (Z-Score 後20名)</div>
                     <div class="card-body p-0">
                         <div class="table-responsive">
                             <table class="table table-hover table-sm text-center align-middle mb-0 ranking-table">
@@ -479,6 +479,14 @@ let activeNewAssess = null;
 let chartInstances = {};
 let parsedTempRegistryRows = null;
 let parsedTempScoreRows = null;
+
+const SUBJECT_KEYS = {
+    'chi_read': ['中讀', '中文閱讀', '閱讀'],
+    'chi_dict': ['中默', '中文默書', '默書'],
+    'eng_read': ['英讀', '英文閱讀', 'reading'],
+    'eng_dict': ['英默', '英文默書', 'dictation'],
+    'math': ['數學', 'maths', 'mathematics']
+};
 
 // --- Firebase 登入狀態監控 ---
 window.addEventListener('firebaseReady', () => {
@@ -651,6 +659,7 @@ function parseGender(val) {
     return s;
 }
 
+// --- 數據上載與欄位智能對齊比對 ---
 window.handleRegistryFileSelected = function(fileEl) {
     if (!fileEl.files || fileEl.files.length === 0) return;
     parseCSV(fileEl.files[0], (err, rows) => {
@@ -1095,13 +1104,13 @@ function renderTwoPointTrendChart(subj, oldCodes, newCode) {
         });
     });
     
-    // 全級平均線
     const allOldVals = [];
     students.forEach(s => {
         const list = oldCodes.map(c => s.details[c]?.raw[subj]).filter(v => v !== undefined && v !== null);
         if (list.length > 0) allOldVals.push(ss.mean(list));
     });
     const allOldMean = allOldVals.length > 0 ? ss.mean(allOldVals) : null;
+    
     const allNewVals = students.map(s => s.newScores.raw[subj]).filter(v => v !== null && !isNaN(v));
     const allNewMean = allNewVals.length > 0 ? ss.mean(allNewVals) : null;
     
@@ -1288,6 +1297,7 @@ function renderDetailDumbbellChart() {
     const selGroup = document.getElementById('groupDetailSelector').value;
     const subj = document.getElementById('subjectSelector').value;
     const sortVal = document.getElementById('sortSelector').value;
+    
     const checkedOld = Array.from(document.querySelectorAll('#filter-dumbbellChart .micro-tick:checked')).map(el => el.value);
     
     let gStudents = currentAnalysisResult.students.filter(s => s.groupKey === selGroup).map(s => {
@@ -1339,6 +1349,7 @@ function renderDetailDumbbellChart() {
         xaxis: { title: '原始分數 (分)', range: [0, 105], gridcolor: '#edf2f7' },
         yaxis: { autorange: 'reversed', gridcolor: '#f7fafc' },
         shapes: [
+            // Z-Score = 0 的兩條中線 (此處畫出全級均分參考線)
             { type: 'line', x0: gradeMean, x1: gradeMean, y0: 0, y1: 1, xref: 'x', yref: 'paper', line: { color: 'rgba(220, 53, 69, 0.6)', width: 2, dash: 'dash' } }
         ],
         annotations: annotations, showlegend: false, margin: { l: 150, r: 80, t: 50, b: 50 },
