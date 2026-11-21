@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>跨年度學籍 Z-Score 智慧多維分析系統 (v14.0)</title>
+    <title>跨年度學籍 Z-Score 智慧多維分析系統 (v15.0 - 終極大數據版)</title>
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Chart.js & Plugins -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
-    <!-- Plotly.js -->
+    <!-- Plotly.js (用於高階分佈堆疊圖與啞鈴圖) -->
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <!-- PapaParse -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
@@ -45,9 +45,11 @@
 
     <style>
         body { background-color: #f4f6f9; font-family: 'Segoe UI', 'Microsoft JhengHei', sans-serif; }
-        .container { max-width: 1460px; }
-        .card { border-radius: 12px; border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .container { max-width: 1480px; }
+        .card { border-radius: 12px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.04); }
         .card-header { border-radius: 12px 12px 0 0 !important; font-weight: bold; }
+        .ranking-thead th { background-color: #1a365d !important; color: white !important; font-weight: normal; padding: 10px; border: 1px solid #e2e8f0; font-size: 0.9rem; }
+        .ranking-table td { border: 1px solid #e2e8f0; padding: 8px; font-size: 0.9rem; }
         .filter-panel { background-color: #edf2f7; border-radius: 8px; padding: 12px; margin-bottom: 12px; font-size: 0.9rem; }
         .btn-download { background-color: #4a5568; color: white; border: none; padding: 4px 12px; font-size: 0.8rem; border-radius: 4px; transition: 0.2s; }
         .btn-download:hover { background-color: #2d3748; }
@@ -55,6 +57,7 @@
         .mapping-box { background: #fff; border: 1px dashed #3182ce; border-radius: 8px; padding: 15px; margin-top: 15px; }
         #login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #1a202c; z-index: 9999; display: flex; justify-content: center; align-items: center; flex-direction: column; }
         .login-box { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); width: 360px; text-align: center; }
+        .badge-avg-diff { font-size: 1.1rem; background-color: #e53e3e; color: white; padding: 6px 12px; border-radius: 8px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -77,7 +80,7 @@
         <div></div>
         <div class="text-center">
             <h1 class="fw-bold text-primary mb-1">📊 跨年度 Z-Score 智慧多維分析系統</h1>
-            <p class="text-muted mb-0">v14.0 - 欄位智能確認、大中細B性別雙維交叉分析版</p>
+            <p class="text-muted mb-0">v15.0 - 欄位智能確認、大中細B性別雙維度交叉分析版</p>
         </div>
         <div class="text-end">
             <span id="user-role-badge" class="badge me-2"></span>
@@ -231,15 +234,22 @@
     <div id="analysisSection" style="display: none;">
         <!-- 學科選擇器 -->
         <div class="card mb-4 shadow-sm">
-            <div class="card-body text-center bg-light">
-                <label for="subjectSelector" class="form-label fs-5 fw-bold me-2 text-dark">🎯 選擇分析學科：</label>
-                <select id="subjectSelector" class="form-select form-select-lg w-auto d-inline-block border-primary" onchange="redrawAllCharts()">
-                    <option value="chi_read">中文閱讀</option>
-                    <option value="chi_dict">中文默書</option>
-                    <option value="eng_read">英文閱讀</option>
-                    <option value="eng_dict">英文默書</option>
-                    <option value="math">數學</option>
-                </select>
+            <div class="card-body d-flex justify-content-between align-items-center bg-light">
+                <div>
+                    <label for="subjectSelector" class="form-label fs-5 fw-bold me-2 text-dark">🎯 選擇分析學科：</label>
+                    <select id="subjectSelector" class="form-select form-select-lg w-auto d-inline-block border-primary" onchange="redrawAllCharts()">
+                        <option value="chi_read">中文閱讀</option>
+                        <option value="chi_dict">中文默書</option>
+                        <option value="eng_read">英文閱讀</option>
+                        <option value="eng_dict">英文默書</option>
+                        <option value="math">數學</option>
+                    </select>
+                </div>
+                <!-- 🚀 全級平均變動顯示區 -->
+                <div>
+                    <span class="text-dark fw-bold me-2">📊 全級平均變動:</span>
+                    <span id="gradeAvgDiffBadge" class="badge-avg-diff">0.0</span>
+                </div>
             </div>
         </div>
 
@@ -248,7 +258,7 @@
             <div class="col-lg-6">
                 <div class="card h-100 shadow-sm">
                     <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                        <span class="text-primary fs-5">第一部分：各群組相對進步 vs 相對退步人數</span>
+                        <span class="text-primary fs-5">第一部分：各群組相對進步 vs 相對退步人數 (雙棒並排)</span>
                         <button class="btn-download" onclick="downloadChart('chartImproveRegress')">📸 下載</button>
                     </div>
                     <div class="card-body">
@@ -257,15 +267,15 @@
                     </div>
                 </div>
             </div>
+            
             <div class="col-lg-6">
                 <div class="card h-100 shadow-sm">
                     <div class="card-header bg-white d-flex justify-content-between align-items-center">
                         <span class="text-primary fs-5">第一部分：全級成績分佈隊形 vs 常態分佈線</span>
-                        <button class="btn-download" onclick="downloadChart('chartDistribution')">📸 下載</button>
                     </div>
                     <div class="card-body">
-                        <div class="text-muted small mb-2">💡 此圖表固定僅顯示最新選取之「新成績」分佈 (Bins=4: 0-25分、26-50分、51-75分、76-100分)。</div>
-                        <canvas id="chartDistribution"></canvas>
+                        <div class="text-muted small mb-2">💡 此圖表固定僅顯示最新選取之「新成績」分佈。</div>
+                        <div id="chartDistributionPlotly" style="width:100%; height:400px;"></div>
                     </div>
                 </div>
             </div>
@@ -298,6 +308,10 @@
                         <button class="btn-download" style="background-color: rgba(255,255,255,0.2);" onclick="downloadChart('chartQuadrant')">📸 下載</button>
                     </div>
                     <div class="card-body">
+                        <div class="d-flex align-items-center mb-2 bg-light p-2 rounded">
+                            <label for="quadrantClassSelector" class="form-label mb-0 fw-bold me-2 small">篩選群組班別:</label>
+                            <select id="quadrantClassSelector" class="form-select form-select-sm border-info" style="width: auto;" onchange="renderQuadrantWithFilter()"></select>
+                        </div>
                         <div class="filter-panel" id="filter-chartQuadrant"></div>
                         <div style="position: relative; height: 400px;"><canvas id="chartQuadrant"></canvas></div>
                     </div>
@@ -308,7 +322,7 @@
                     <div class="card-header bg-danger text-white fw-bold">⚠️ 第二部分：重點關注 - 全科相對退步 (中+英+數)</div>
                     <div class="card-body p-0">
                         <div class="p-2 bg-light small text-muted">
-                            * 註：篩選在已選評估中，中文閱讀、英文閱讀及數學均呈現相對退步 (Z-Score 減少) 之學生名單。
+                            * 註：篩選在已選評估中，中文閱讀、英文閱讀及數學均呈現相對退步 (Z-Score 減少 < -0.2) 之學生名單。
                         </div>
                         <div class="table-responsive" style="max-height: 400px;">
                             <table class="table table-hover table-sm mb-0">
@@ -318,12 +332,58 @@
                                         <th>姓名</th>
                                         <th>性別</th>
                                         <th>大中細B</th>
-                                        <th>中讀變化</th>
-                                        <th>英讀變化</th>
-                                        <th>數學變化</th>
+                                        <th>中讀</th>
+                                        <th>英讀</th>
+                                        <th>數學</th>
                                     </tr>
                                 </thead>
                                 <tbody id="multiSubjAttentionBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 🚀 區塊五：相對進退步頭20名單 (左右並排) -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-6">
+                <div class="card shadow-sm border-success h-100">
+                    <div class="card-header bg-success text-white fw-bold">🚀 卓越進步排行榜 (Z-Score 增加前20名)</div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover text-center align-middle mb-0 ranking-table">
+                                <thead class="ranking-thead">
+                                    <tr>
+                                        <th>#</th>
+                                        <th>班別</th>
+                                        <th>姓名</th>
+                                        <th>Z-Score 變化</th>
+                                        <th>分數淨變動</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="rankingProgressBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card shadow-sm border-danger h-100">
+                    <div class="card-header bg-danger text-white fw-bold">📉 重點關懷排行榜 (Z-Score 減少後20名)</div>
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-hover text-center align-middle mb-0 ranking-table">
+                                <thead class="ranking-thead">
+                                    <tr>
+                                        <th>倒數</th>
+                                        <th>班別</th>
+                                        <th>姓名</th>
+                                        <th>Z-Score 變化</th>
+                                        <th>分數淨變動</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="rankingRegressBody"></tbody>
                             </table>
                         </div>
                     </div>
@@ -402,6 +462,7 @@ window.performLogin = function() {
     const pass = document.getElementById('loginPass').value;
     const msg = document.getElementById('loginMsg');
     const btn = document.getElementById('btnLoginBtn');
+    
     if(!email || !pass) { msg.innerText = "請輸入完整帳號密碼"; return; }
     btn.disabled = true; btn.innerText = "驗證中..."; msg.innerText = "";
     
@@ -717,7 +778,6 @@ window.triggerMainAnalysis = function() {
     if (!selectedNew) { alert("請至少選擇一個「新成績」作為標準！"); return; }
     if (checkedOld.length === 0) { alert("請至少選擇一個「舊成績」進行對比！"); return; }
     
-    // 獲取目前選取的 1-2 個分組維度
     const selectedDims = Array.from(document.querySelectorAll('.group-dimension:checked')).map(el => el.value);
     
     activeOldAssess = checkedOld;
@@ -733,11 +793,9 @@ function performCalculation(oldCodes, newCode, selectedDims) {
     const oldAssessObjs = cohortAssessments.filter(a => oldCodes.includes(a.code));
     if (!newAssessObj) { showStatus("❌ 找不到新成績資料", "danger"); return; }
     
-    // 1. 以新成績名單為唯一標準 (排除離校生)
     const baseStudents = newAssessObj.students;
     const baseRegs = new Set(baseStudents.map(s => s.regNo));
     
-    // 2. 計算各次評估標準化母體的均值與標準差 (方法 A)
     const statsMap = {};
     const allInvolved = [newAssessObj, ...oldAssessObjs];
     allInvolved.forEach(assess => {
@@ -753,7 +811,6 @@ function performCalculation(oldCodes, newCode, selectedDims) {
         });
     });
     
-    // 3. 學生群組 Key 生成器 (雙維度)
     const getGroupKey = (s) => {
         const parts = [];
         selectedDims.forEach(dim => {
@@ -823,16 +880,23 @@ function performCalculation(oldCodes, newCode, selectedDims) {
     
     document.getElementById('analysisSection').style.display = 'block';
     
+    // 初始化詳細群組選擇器
     const groupSel = document.getElementById('groupDetailSelector');
     groupSel.innerHTML = '';
     uniqueGroups.forEach(g => groupSel.add(new Option(g, g)));
     
+    // 初始化四象限班別選擇器
+    const quadClassSel = document.getElementById('quadrantClassSelector');
+    quadClassSel.innerHTML = '<option value="all">--顯示全級學童--</option>';
+    const distinctClasses = [...new Set(baseStudents.map(s => s.class))].sort();
+    distinctClasses.forEach(c => quadClassSel.add(new Option(c, c)));
+    
     buildIndependentFilters();
     redrawAllCharts();
+    
     showStatus("✅ 多維度交叉分析完成！您可利用圖表微調面板即時調整各項數據。", "success");
 }
 
-// 建立各圖表獨立微調之 Checkbox 面板
 function buildIndependentFilters() {
     const panels = ['filter-chartImproveRegress', 'filter-chartClassRawLine', 'filter-chartQuadrant', 'filter-dumbbellChart'];
     panels.forEach(pId => {
@@ -864,7 +928,7 @@ function onMicroFilterChanged(panelId) {
     
     if (panelId === 'filter-chartImproveRegress') renderImproveRegressChart(subj, checkedTicks, baseNew);
     else if (panelId === 'filter-chartClassRawLine') renderClassRawTrendLine(subj, checkedTicks, baseNew);
-    else if (panelId === 'filter-chartQuadrant') renderQuadrantChart(subj, checkedTicks, baseNew);
+    else if (panelId === 'filter-chartQuadrant') renderQuadrantChart(subj, checkedTicks, baseNew, document.getElementById('quadrantClassSelector').value);
     else if (panelId === 'filter-dumbbellChart') renderDetailDumbbellChart();
 }
 
@@ -873,82 +937,143 @@ function redrawAllCharts() {
     const oldCodes = currentAnalysisResult.oldCodes;
     const newCode = currentAnalysisResult.newCode;
     
+    // 計算學科全級平均變動並更新右上角
+    calculateGradeAvgDiff(subj, oldCodes, newCode);
+    
     renderImproveRegressChart(subj, oldCodes, newCode);
     renderDistributionChart(subj, newCode);
     renderClassRawTrendLine(subj, oldCodes, newCode);
-    renderQuadrantChart(subj, oldCodes, newCode);
+    renderQuadrantChart(subj, oldCodes, newCode, 'all');
     renderDetailDumbbellChart();
     renderMultiSubjectAttentionTable();
+    renderTop20ProgressRegression(subj, oldCodes, newCode);
 }
 
-// 1. 各組別 相對進退步直條圖
+// 核心計算：全級平均變動
+function calculateGradeAvgDiff(subj, oldCodes, newCode) {
+    const students = currentAnalysisResult.students;
+    const newRaws = students.map(s => s.newScores.raw[subj]).filter(v => v !== null && !isNaN(v));
+    const oldRaws = [];
+    students.forEach(s => {
+        const valList = oldCodes.map(c => s.details[c]?.raw[subj]).filter(v => v !== undefined && v !== null);
+        if (valList.length > 0) oldRaws.push(ss.mean(valList));
+    });
+    
+    if (newRaws.length > 0 && oldRaws.length > 0) {
+        const diff = ss.mean(newRaws) - ss.mean(oldRaws);
+        const badge = document.getElementById('gradeAvgDiffBadge');
+        badge.innerText = `${diff >= 0 ? '+' : ''}${diff.toFixed(1)}分`;
+        badge.style.backgroundColor = diff >= 0 ? '#198754' : '#e53e3e';
+    }
+}
+
+// 1. 各組別 相對進步 vs 退步（雙棒並排圖）
 function renderImproveRegressChart(subj, oldCodes, newCode) {
     const students = currentAnalysisResult.students;
     const groups = currentAnalysisResult.groupList;
+    
     const datasets = [
-        { label: '相對進步人數', data: [], backgroundColor: 'rgba(25, 135, 84, 0.8)' },
-        { label: '相對退步人數', data: [], backgroundColor: 'rgba(220, 53, 69, 0.8)' }
+        { label: '🚀 相對進步 (ΔZ > +0.2)', data: [], backgroundColor: '#198754' },
+        { label: '⚖️ 持平穩定 (±0.2Z 內)', data: [], backgroundColor: '#a0aec0' },
+        { label: '📉 顯著退步 (ΔZ < -0.2)', data: [], backgroundColor: '#dc3545' }
     ];
     
     groups.forEach(g => {
-        let improve = 0, regress = 0;
+        let improve = 0, flat = 0, regress = 0;
         students.filter(s => s.groupKey === g).forEach(s => {
             const newZ = s.newScores.z[subj];
             const oldZList = oldCodes.map(code => s.details[code]?.z[subj]).filter(v => v !== undefined && v !== null);
             const oldZAvg = oldZList.length > 0 ? ss.mean(oldZList) : null;
+            
             if (newZ !== null && oldZAvg !== null) {
-                if (newZ - oldZAvg >= 0) improve++; else regress++;
+                const diff = newZ - oldZAvg;
+                if (diff > 0.2) improve++;
+                else if (diff < -0.2) regress++;
+                else flat++;
             }
         });
-        datasets[0].data.push(improve); datasets[1].data.push(regress);
+        datasets[0].data.push(improve);
+        datasets[1].data.push(flat);
+        datasets[2].data.push(regress);
     });
     
     if (chartInstances['chartImproveRegress']) chartInstances['chartImproveRegress'].destroy();
     chartInstances['chartImproveRegress'] = new Chart(document.getElementById('chartImproveRegress').getContext('2d'), {
         type: 'bar',
         data: { labels: groups, datasets },
-        options: { responsive: true, scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } } }
+        options: {
+            responsive: true,
+            scales: { x: { stacked: false }, y: { beginAtZero: true } }
+        }
     });
 }
 
-// 2. 全級常態分佈線 (Bins=4)
+// 2. 全級成績分佈隊形 vs 常態分佈線（Plotly 堆疊展示）
 function renderDistributionChart(subj, newCode) {
     const students = currentAnalysisResult.students;
-    const groups = currentAnalysisResult.groupList;
+    const classes = [...new Set(students.map(s => s.class))].sort();
     const scores = students.map(s => s.newScores.raw[subj]).filter(v => v !== null && !isNaN(v));
     if (scores.length === 0) return;
     
     const mean = ss.mean(scores);
     const std = ss.standardDeviation(scores) || 1;
-    const binLabels = ["0-25分", "26-50分", "51-75分", "76-100分"];
-    const datasets = [];
-    const colors = ['#3182ce', '#dd6b20', '#319795', '#805ad5', '#e53e3e', '#d69e2e', '#4a5568'];
     
-    groups.forEach((g, idx) => {
-        const gData = [0, 0, 0, 0];
-        students.filter(s => s.groupKey === g).forEach(s => {
-            const val = s.newScores.raw[subj];
-            if (val !== null) gData[Math.min(3, Math.floor(val / 25))]++;
+    const binSize = 5; // 提高分辨率如附件圖
+    const numBins = 20;
+    const xBinCenters = Array.from({length: numBins}, (_, i) => i * binSize + binSize / 2);
+    
+    const traces = [];
+    const colorPalette = ['#3182ce', '#dd6b20', '#319795', '#805ad5', '#e53e3e', '#718096'];
+    
+    classes.forEach((cls, idx) => {
+        const yData = Array(numBins).fill(0);
+        students.filter(s => s.class === cls).forEach(s => {
+            const score = s.newScores.raw[subj];
+            if (score !== null) {
+                const binIdx = Math.min(numBins - 1, Math.floor(score / binSize));
+                yData[binIdx]++;
+            }
         });
-        datasets.push({ label: g, data: gData, backgroundColor: colors[idx % colors.length] });
+        
+        traces.push({
+            x: xBinCenters,
+            y: yData,
+            name: cls,
+            type: 'bar',
+            marker: { color: colorPalette[idx % colorPalette.length] }
+        });
     });
     
-    const normalLineData = binLabels.map((_, bIdx) => {
-        const x = bIdx * 25 + 12.5;
+    // 生成常態分佈理論線
+    const normalX = [];
+    const normalY = [];
+    for (let x = 0; x <= 100; x += 1) {
+        normalX.push(x);
         const prob = Math.exp(-0.5 * Math.pow((x - mean) / std, 2)) / (std * Math.sqrt(2 * Math.PI));
-        return prob * scores.length * 25;
-    });
-    datasets.push({ type: 'line', label: '常態分佈 (理論)', data: normalLineData, borderColor: '#e53e3e', borderWidth: 2, fill: false });
+        normalY.push(prob * scores.length * binSize);
+    }
     
-    if (chartInstances['chartDistribution']) chartInstances['chartDistribution'].destroy();
-    chartInstances['chartDistribution'] = new Chart(document.getElementById('chartDistribution').getContext('2d'), {
-        type: 'bar',
-        data: { labels: binLabels, datasets },
-        options: { responsive: true, scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } } }
+    traces.push({
+        x: normalX,
+        y: normalY,
+        name: '常態分佈 (理論)',
+        type: 'scatter',
+        mode: 'lines',
+        line: { color: 'red', width: 2.5 }
     });
+    
+    const layout = {
+        barmode: 'stack',
+        xaxis: { title: '分數', range: [0, 105], tickmode: 'linear', tick0: 0, dtick: 10 },
+        yaxis: { title: '人數' },
+        margin: { l: 50, r: 30, t: 30, b: 50 },
+        plot_bgcolor: 'white', paper_bgcolor: 'white'
+    };
+    
+    Plotly.newPlot('chartDistributionPlotly', traces, layout, { displayModeBar: false });
 }
 
-// 3. 各組別平均分走勢折線圖
+// 3. 各組別平均分走勢折線圖 (Hover 一鍵聯動)
 function renderClassRawTrendLine(subj, oldCodes, newCode) {
     const students = currentAnalysisResult.students;
     const groups = currentAnalysisResult.groupList;
@@ -976,15 +1101,30 @@ function renderClassRawTrendLine(subj, oldCodes, newCode) {
     chartInstances['chartClassRawLine'] = new Chart(document.getElementById('chartClassRawLine').getContext('2d'), {
         type: 'line',
         data: { labels: timeline, datasets },
-        options: { responsive: true, maintainAspectRatio: false, scales: { y: { title: { display: true, text: '平均分數' } } } }
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: { mode: 'index', intersect: false }, // 滑鼠指向時自動列出同評估所有班級數據
+            scales: { y: { title: { display: true, text: '平均分數' } } }
+        }
     });
 }
 
 // 4. 四象限圖
-function renderQuadrantChart(subj, oldCodes, newCode) {
+window.renderQuadrantWithFilter = function() {
+    const subj = document.getElementById('subjectSelector').value;
+    const filterClass = document.getElementById('quadrantClassSelector').value;
+    const filterTicks = Array.from(document.querySelectorAll('#filter-chartQuadrant .micro-tick:checked')).map(el => el.value);
+    renderQuadrantChart(subj, filterTicks, currentAnalysisResult.newCode, filterClass);
+};
+
+function renderQuadrantChart(subj, oldCodes, newCode, filterClass) {
     const students = currentAnalysisResult.students;
     const scatterData = [];
+    
     students.forEach(s => {
+        if (filterClass !== 'all' && s.class !== filterClass) return;
+        
         const newZ = s.newScores.z[subj];
         const oldZList = oldCodes.map(code => s.details[code]?.z[subj]).filter(v => v !== undefined && v !== null);
         const oldZAvg = oldZList.length > 0 ? ss.mean(oldZList) : null;
@@ -993,16 +1133,24 @@ function renderQuadrantChart(subj, oldCodes, newCode) {
         }
     });
     
+    const chartData = {
+        datasets: [{
+            label: '學生分佈', data: scatterData,
+            backgroundColor: scatterData.map(d => {
+                if (d.x >= 0 && d.y > 0.2) return '#198754';  // 穩步領先 (綠)
+                if (d.x < 0 && d.y > 0.2) return '#d97706';   // 逆勢成長 (黃)
+                if (d.x < 0 && d.y < -0.2) return '#dc3545';  // 雙重落後 (紅)
+                if (d.x >= 0 && d.y < -0.2) return '#fd7e14'; // 警訊高分 (橘)
+                return '#cbd5e0';                             // 持平波動 (灰)
+            }),
+            pointRadius: 6
+        }]
+    };
+    
     if (chartInstances['chartQuadrant']) chartInstances['chartQuadrant'].destroy();
     chartInstances['chartQuadrant'] = new Chart(document.getElementById('chartQuadrant').getContext('2d'), {
         type: 'scatter',
-        data: {
-            datasets: [{
-                label: '學生分佈', data: scatterData,
-                backgroundColor: scatterData.map(d => (d.x >= 0 && d.y >= 0) ? '#198754' : (d.x < 0 && d.y >= 0) ? '#d97706' : (d.x < 0 && d.y < 0) ? '#dc3545' : '#6b7280'),
-                pointRadius: 6
-            }]
-        },
+        data: chartData,
         options: {
             responsive: true, maintainAspectRatio: false,
             scales: {
@@ -1014,7 +1162,9 @@ function renderQuadrantChart(subj, oldCodes, newCode) {
                 annotation: {
                     annotations: {
                         lineX: { type: 'line', xMin: 0, xMax: 0, borderColor: '#cbd5e0', borderWidth: 1.5 },
-                        lineY: { type: 'line', yMin: 0, yMax: 0, borderColor: '#cbd5e0', borderWidth: 1.5 }
+                        lineY: { type: 'line', yMin: 0, yMax: 0, borderColor: '#cbd5e0', borderWidth: 1.5 },
+                        flatBandUpper: { type: 'line', yMin: 0.2, yMax: 0.2, borderColor: '#cbd5e0', borderWidth: 1, borderDash: [3,3] },
+                        flatBandLower: { type: 'line', yMin: -0.2, yMax: -0.2, borderColor: '#cbd5e0', borderWidth: 1, borderDash: [3,3] }
                     }
                 }
             }
@@ -1022,21 +1172,24 @@ function renderQuadrantChart(subj, oldCodes, newCode) {
     });
 }
 
-// 5. 啞鈴圖 (詳細學生成績)
+// 5. 啞鈴圖 (詳細學生成績) - 增加中間值與零線
 function renderDetailDumbbellChart() {
     const selGroup = document.getElementById('groupDetailSelector').value;
     const subj = document.getElementById('subjectSelector').value;
     const sortVal = document.getElementById('sortSelector').value;
+    
     const checkedOld = Array.from(document.querySelectorAll('#filter-dumbbellChart .micro-tick:checked')).map(el => el.value);
     
     let gStudents = currentAnalysisResult.students.filter(s => s.groupKey === selGroup).map(s => {
         const newRaw = s.newScores.raw[subj];
         const oldRawList = checkedOld.map(code => s.details[code]?.raw[subj]).filter(v => v !== undefined && v !== null);
         const oldRawAvg = oldRawList.length > 0 ? ss.mean(oldRawList) : null;
+        
         const newZ = s.newScores.z[subj];
         const oldZList = checkedOld.map(code => s.details[code]?.z[subj]).filter(v => v !== undefined && v !== null);
         const oldZAvg = oldZList.length > 0 ? ss.mean(oldZList) : null;
         const diff = (newZ !== null && oldZAvg !== null) ? (newZ - oldZAvg) : 0;
+        
         return { name: s.name, oldRaw: oldRawAvg, newRaw: newRaw, diff: diff };
     }).filter(s => s.newRaw !== null && s.oldRaw !== null);
     
@@ -1049,12 +1202,12 @@ function renderDetailDumbbellChart() {
     const traceOld = { x: gStudents.map(s => s.oldRaw), y: names, mode: 'markers', marker: { color: '#cbd5e0', size: 10 }, name: '舊成績平均' };
     const traceNew = {
         x: gStudents.map(s => s.newRaw), y: names, mode: 'markers',
-        marker: { color: gStudents.map(s => s.diff >= 0 ? '#2ca02c' : '#d62728'), size: 12 }, name: '新成績'
+        marker: { color: gStudents.map(s => s.diff > 0.2 ? '#2ca02c' : s.diff < -0.2 ? '#d62728' : '#718096'), size: 12 }, name: '新成績'
     };
     
     const annotations = [];
     gStudents.forEach((s, idx) => {
-        const color = s.diff >= 0 ? '#2ca02c' : '#d62728';
+        const color = s.diff > 0.2 ? '#2ca02c' : s.diff < -0.2 ? '#d62728' : '#718096';
         annotations.push({
             x: s.newRaw, y: names[idx], ax: s.oldRaw, ay: names[idx],
             xref: 'x', yref: 'y', axref: 'x', ayref: 'y',
@@ -1067,13 +1220,23 @@ function renderDetailDumbbellChart() {
         });
     });
     
+    // 繪製 Z-Score = 0 的全級均值基準線
+    const subjStats = currentAnalysisResult.statsMap[currentAnalysisResult.newCode][subj];
+    const gradeMean = subjStats ? subjStats.mean : 50;
+    
     const layout = {
         title: `群組 [${selGroup}] 學生個人成長分析`,
         height: Math.max(400, gStudents.length * 35),
         xaxis: { title: '原始分數 (分)', range: [0, 105], gridcolor: '#edf2f7' },
         yaxis: { autorange: 'reversed', gridcolor: '#f7fafc' },
-        annotations: annotations, showlegend: false, margin: { l: 100, r: 80, t: 50, b: 50 }
+        shapes: [
+            // Z-Score = 0 全級均分紅線
+            { type: 'line', x0: gradeMean, x1: gradeMean, y0: 0, y1: 1, xref: 'x', yref: 'paper', line: { color: 'rgba(220, 53, 69, 0.6)', width: 2, dash: 'dash' } }
+        ],
+        annotations: annotations, showlegend: false, margin: { l: 100, r: 80, t: 50, b: 50 },
+        plot_bgcolor: 'white', paper_bgcolor: 'white'
     };
+    
     Plotly.newPlot('chartDetailRawScore', [traceOld, traceNew], layout, { displayModeBar: false });
 }
 
@@ -1093,7 +1256,7 @@ function renderMultiSubjectAttentionTable() {
             const oldZAvg = oldZList.length > 0 ? ss.mean(oldZList) : null;
             diffs[subj] = (newZ !== null && oldZAvg !== null) ? (newZ - oldZAvg) : 0;
         });
-        if (diffs['chi_read'] < 0 && diffs['eng_read'] < 0 && diffs['math'] < 0) {
+        if (diffs['chi_read'] < -0.2 && diffs['eng_read'] < -0.2 && diffs['math'] < -0.2) {
             dangerList.push({ name: s.name, class: s.class, gender: s.gender, birthGroup: s.birthGroup, chi: diffs['chi_read'], eng: diffs['eng_read'], math: diffs['math'] });
         }
     });
@@ -1116,6 +1279,59 @@ function renderMultiSubjectAttentionTable() {
             `;
         });
     }
+}
+
+// 7. 🚀 相對進步/ 📉 相對退步 頭20名單
+function renderTop20ProgressRegression(subj, oldCodes, newCode) {
+    const students = currentAnalysisResult.students;
+    const list = [];
+    
+    students.forEach(s => {
+        const newZ = s.newScores.z[subj];
+        const oldZList = oldCodes.map(code => s.details[code]?.z[subj]).filter(v => v !== undefined && v !== null);
+        const oldZAvg = oldZList.length > 0 ? ss.mean(oldZList) : null;
+        
+        const newRaw = s.newScores.raw[subj];
+        const oldRawList = oldCodes.map(code => s.details[code]?.raw[subj]).filter(v => v !== undefined && v !== null);
+        const oldRawAvg = oldRawList.length > 0 ? ss.mean(oldRawList) : null;
+        
+        if (newZ !== null && oldZAvg !== null && newRaw !== null && oldRawAvg !== null) {
+            list.push({
+                name: s.name,
+                class: s.class,
+                zDiff: newZ - oldZAvg,
+                rawDiff: newRaw - oldRawAvg
+            });
+        }
+    });
+    
+    // 卓越進步前20名
+    list.sort((a,b) => b.zDiff - a.zDiff);
+    const top20 = list.slice(0, 20);
+    const progressBody = document.getElementById('rankingProgressBody');
+    progressBody.innerHTML = top20.map((s, idx) => `
+        <tr>
+            <td>${idx + 1}</td>
+            <td class="fw-bold">${s.class}</td>
+            <td>${s.name}</td>
+            <td class="text-success fw-bold">+${s.zDiff.toFixed(2)}</td>
+            <td class="text-success fw-bold">+${s.rawDiff.toFixed(1)}分</td>
+        </tr>
+    `).join('');
+    
+    // 重點關懷後20名
+    list.sort((a,b) => a.zDiff - b.zDiff);
+    const bottom20 = list.slice(0, 20);
+    const regressBody = document.getElementById('rankingRegressBody');
+    regressBody.innerHTML = bottom20.map((s, idx) => `
+        <tr>
+            <td>${idx + 1}</td>
+            <td class="fw-bold">${s.class}</td>
+            <td>${s.name}</td>
+            <td class="text-danger fw-bold">${s.zDiff.toFixed(2)}</td>
+            <td class="text-danger fw-bold">${s.rawDiff.toFixed(1)}分</td>
+        </tr>
+    `).join('');
 }
 
 const showStatus = (message, type = 'info') => {
