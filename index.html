@@ -79,7 +79,7 @@
 <div id="login-overlay">
     <div class="login-box">
         <h3 class="mb-2 fw-bold text-primary">🔒 系統安全登入</h3>
-        <p class="text-muted small mb-4">跨年度 Z-Score 智慧多維分析系統</p>
+        <p class="text-muted small mb-4">成績分析系統</p>
         <input type="email" id="loginEmail" class="form-control mb-3" placeholder="電子郵件 (Email)">
         <input type="password" id="loginPass" class="form-control mb-3" placeholder="密碼 (Password)" onkeypress="if(event.key==='Enter') performLogin()">
         <button id="btnLoginBtn" class="btn btn-primary w-100 fw-bold" onclick="performLogin()">登入系統</button>
@@ -92,8 +92,8 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div></div>
         <div class="text-center">
-            <h1 class="fw-bold text-primary mb-1">📊 跨年度 Z-Score 智慧多維分析系統</h1>
-            <p class="text-muted mb-0">v24.1 - 常模雙向多選、橫向常模鐘形、性別交叉對照版</p>
+            <h1 class="fw-bold text-primary mb-1">📊 成績分析系統</h1>
+            <p class="text-muted mb-0">v29</p>
         </div>
         <div class="text-end">
             <span id="user-role-badge" class="badge me-2"></span>
@@ -1934,6 +1934,21 @@
                         title: { display: true, text: '相對進退步 (Z-Score 新舊相差)' } 
                     }
                 },
+
+                plugins: {
+                    // 🌟 這裡就是修改 Tooltip 顯示 "陳大明: (0.719, -0.300)" 的地方
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const student = context.raw;
+                                const xVal = student.x.toFixed(3);
+                                const yVal = student.y.toFixed(3);
+                                return `${student.name}: (${xVal}, ${yVal})`;
+                            }
+                        }
+                    },
+                    annotation: { annotations }
+                }
 
             },
             plugins: [{
