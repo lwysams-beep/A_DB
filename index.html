@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Z-Score 標準化成績分析系統 (v29.1</title>
+    <title>Z-Score 標準化成績分析系統 (v29.2</title>
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Chart.js & Plugins -->
@@ -93,7 +93,7 @@
         <div></div>
         <div class="text-center">
             <h1 class="fw-bold text-primary mb-1">📊 標準化成績分析系統</h1>
-            <p class="text-muted mb-0">v29.1</p>
+            <p class="text-muted mb-0">v29.2</p>
         </div>
         <div class="text-end">
             <span id="user-role-badge" class="badge me-2"></span>
@@ -1869,12 +1869,33 @@
         renderRankingBellCurve(null);
     };
     
+        // 🌟 補回：當任何一個微調面板打勾時，動態重新渲染該圖表的函數
+        window.onMicroFilterChanged = function(panelId) {
+        const subj = document.getElementById('subjectSelector').value;
+        const checkedOld = Array.from(document.querySelectorAll(`#${panelId} .micro-tick-old:checked`)).map(el => el.value);
+        const checkedNew = Array.from(document.querySelectorAll(`#${panelId} .micro-tick-new:checked`)).map(el => el.value);
+        
+        if (checkedOld.length === 0 || checkedNew.length === 0) return;
+        
+        if (panelId === 'filter-chartImproveRegress') renderImproveRegressChart(subj, checkedOld, checkedNew);
+        else if (panelId === 'filter-chartTwoPointTrend') renderTwoPointTrendChart(subj, checkedOld, checkedNew);
+        else if (panelId === 'filter-chartClassRawLine') renderClassRawTrendLine(subj, checkedOld, checkedNew);
+        else if (panelId === 'filter-chartQuadrant') renderQuadrantChart(subj, checkedOld, checkedNew, document.getElementById('quadrantClassSelector').value);
+        else if (panelId === 'filter-dumbbellChart') renderDetailDumbbellChart();
+    };
+
+    // 🌟 修正：四象限專用的班別下拉選單觸發函數 (支援新舊多選陣列)
     window.renderQuadrantWithFilter = function() {
         const subj = document.getElementById('subjectSelector').value;
         const filterClass = document.getElementById('quadrantClassSelector').value;
-        const filterTicks = Array.from(document.querySelectorAll('#filter-chartQuadrant .micro-tick:checked')).map(el => el.value);
-        renderQuadrantChart(subj, filterTicks, currentAnalysisResult.newCodes, filterClass);
+        // 正確抓取新版面板的勾選狀態
+        const checkedOld = Array.from(document.querySelectorAll('#filter-chartQuadrant .micro-tick-old:checked')).map(el => el.value);
+        const checkedNew = Array.from(document.querySelectorAll('#filter-chartQuadrant .micro-tick-new:checked')).map(el => el.value);
+        
+        if (checkedOld.length === 0 || checkedNew.length === 0) return;
+        renderQuadrantChart(subj, checkedOld, checkedNew, filterClass);
     };
+
     
     function renderQuadrantChart(subj, oldCodes, newCodes, filterClass) {
         const students = currentAnalysisResult.students;
