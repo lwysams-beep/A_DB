@@ -298,7 +298,7 @@
             <div class="col-lg-6">
                 <div class="card h-100 shadow-sm">
                     <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                        <span class="text-primary fs-5">第一部分：各群組顯著進步 vs 顯著退步人數 (雙棒並排)</span>
+                        <span class="text-primary fs-5">第一部分：各群組顯著進步 vs 顯著退步人數 (3棒並排)</span>
                         <button class="btn-download" onclick="downloadChart('chartImproveRegress')">📸 下載</button>
                     </div>
                     <div class="card-body">
@@ -310,7 +310,7 @@
             <div class="col-lg-6">
                 <div class="card h-100 shadow-sm">
                     <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                        <span class="text-primary fs-5">各群組平均分走勢 (舊 vs 新 - 兩點對比)</span>
+                        <span class="text-primary fs-5">第一部分：各群組平均分走勢 (舊 vs 新 - 兩點對比)</span>
                         <button class="btn-download" onclick="downloadChart('chartTwoPointTrend')">📸 下載</button>
                     </div>
                     <div class="card-body">
@@ -366,7 +366,7 @@
         <!-- 第三部分：跨多個評估均分走勢折線圖 -->
         <div class="card shadow-sm mb-4">
             <div class="card-header bg-white d-flex justify-content-between align-items-center">
-                <span class="text-primary fs-5">第三部分：各群組平均分跨評估走勢 (舊 vs 新 - 全歷史點)</span>
+                <span class="text-primary fs-5">第三部分：各群組平均分跨評估走勢 (舊 vs 新 - 全歷史點) (學期尾適用)</span>
                 <button class="btn-download" onclick="downloadChart('chartClassRawLine')">📸 下載</button>
             </div>
             <div class="card-body">
@@ -380,7 +380,7 @@
         <!-- 🌟 應您指示調整排版：將「全級常模鐘形曲線位置連動圖」拉橫、全寬展示，放置在折線圖正下方 [3] -->
         <div class="card shadow-sm mb-4 border-start border-dark border-4">
             <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-                <span>🔔 全級常模鐘形曲線位置連動 (指到下方任一學生時，0 毫秒極速同步常模位置)</span>
+                <span>第四部分：🔔 全級正態常模鐘形曲線位置</span>
                 <button class="btn-download" onclick="downloadChart('chartRankingBell')">📸 下載鐘形圖</button>
             </div>
             <div class="card-body">
@@ -397,7 +397,7 @@
                     <div class="scale-badge" style="background-color: #dd6b20;" data-badge="sig_down">顯著滑落<span class="scale-range">-0.8 &lt; ΔZ &le; -0.5</span></div>
                     <div class="scale-badge" style="background-color: #ed8936;" data-badge="mild_down">溫和退步<span class="scale-range">-0.5 &lt; ΔZ &le; -0.2</span></div>
                     <div class="scale-badge" style="background-color: #718096;" data-badge="flat">穩健持平<span class="scale-range">±0.2Z 內</span></div>
-                    <div class="scale-badge" style="background-color: #d69e2e;" data-badge="mild_up">溫和微步<span class="scale-range">+0.2 &le; ΔZ &lt; +0.5</span></div>
+                    <div class="scale-badge" style="background-color: #d69e2e;" data-badge="mild_up">溫和進步<span class="scale-range">+0.2 &le; ΔZ &lt; +0.5</span></div>
                     <div class="scale-badge" style="background-color: #3182ce;" data-badge="sig_up">顯著進步<span class="scale-range">+0.5 &le; ΔZ &lt; +0.8</span></div>
                     <div class="scale-badge" style="background-color: #198754;" data-badge="break_up">突破性躍進<span class="scale-range">ΔZ &ge; +0.8</span></div>
                 </div>
@@ -488,12 +488,12 @@
             </div>
         </div>
 
-        <!-- 📊 第二部分：學生學習狀態四象限分佈圖 & 右側分類名冊 (已完全刪除趨勢向量模式，並更新色彩) [4, 5] -->
+        <!-- 📊 第五部分：學生學習狀態四象限分佈圖 & 右側分類名冊 (已完全刪除趨勢向量模式，並更新色彩) [4, 5] -->
         <div class="row g-4 mb-4">
             <div class="col-lg-7">
                 <div class="card h-100 shadow-sm border-start border-info border-4">
                     <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
-                        <span>第二部分：學生學習狀態四象限分佈圖</span>
+                        <span>第五部分：學生學習狀態四象限分佈圖</span>
                         <button class="btn-download" style="background-color: rgba(255,255,255,0.2);" onclick="downloadChart('chartQuadrant')">📸 下載</button>
                     </div>
                     <div class="card-body">
@@ -554,7 +554,7 @@
         <div class="card shadow-sm mb-4">
             <div class="card-header bg-white">
                 <div class="d-flex justify-content-between align-items-center flex-wrap g-2">
-                    <span class="text-primary fs-5">🔍 第四部分：學生成績詳細分析 (經典模式)</span>
+                    <span class="text-primary fs-5">🔍 第六部分：學生成績詳細分析 (經典模式)</span>
                     <div class="d-flex align-items-center flex-wrap gap-2">
                         <div class="form-check form-switch mb-0 me-3">
                             <input class="form-check-input" type="checkbox" id="dumbbellSubjectAllMode" onchange="renderDetailDumbbellChart()">
@@ -1716,7 +1716,7 @@
         const getBadgeHTML = (zDiff) => {
             if (zDiff >= 0.8) return `<span class="badge" style="background-color:#198754 !important; color:white;">🌟 突破性躍進</span>`;
             if (zDiff >= 0.5) return `<span class="badge" style="background-color:#3182ce !important; color:white;">🚀 顯著進步</span>`;
-            if (zDiff >= 0.2) return `<span class="badge" style="background-color:#d69e2e !important; color:white;">📈 溫和微步</span>`;
+            if (zDiff >= 0.2) return `<span class="badge" style="background-color:#d69e2e !important; color:white;">📈 溫和進步</span>`;
             if (zDiff <= -0.8) return `<span class="badge" style="background-color:#e53e3e !important; color:white;">🚨 斷崖式失守</span>`;
             if (zDiff <= -0.5) return `<span class="badge" style="background-color:#dd6b20 !important; color:white;">📉 顯著滑落</span>`;
             if (zDiff <= -0.2) return `<span class="badge" style="background-color:#ed8936 !important; color:white;">⚠️ 溫和退步</span>`;
