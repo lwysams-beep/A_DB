@@ -1945,14 +1945,19 @@
         
         let gStudents = currentAnalysisResult.students.filter(s => s.groupKey === selGroup);
         
-        // 🌟 按自然班號正序排列 [4]
-        gStudents.sort((a, b) => a.classNo - b.classNo);
+        // ==========================================
+        // 📌 保留舊有的 4 個排序方式 (基於目前選擇的主科)
+        // ==========================================
+        gStudents.sort((a, b) => a.classNo - b.classNo); // 預設依班號 (自然數 1,2,3...)
         
         if (sortVal === 'new_score_desc') {
+            // 依新成績 (高至低)
             gStudents.sort((a, b) => (b.newScores.raw[currentMainSubj] || 0) - (a.newScores.raw[currentMainSubj] || 0));
         } else if (sortVal === 'old_score_desc') {
+            // 依舊成績 (高至低)
             gStudents.sort((a, b) => (b.oldScores.raw[currentMainSubj] || 0) - (a.oldScores.raw[currentMainSubj] || 0));
         } else if (sortVal === 'diff_desc') {
+            // 依相對進步幅度 (大至小)
             gStudents.sort((a, b) => {
                 const diffA = (a.newScores.z[currentMainSubj] || 0) - (a.oldScores.z[currentMainSubj] || 0);
                 const diffB = (b.newScores.z[currentMainSubj] || 0) - (b.oldScores.z[currentMainSubj] || 0);
@@ -1961,128 +1966,111 @@
         }
         
         const pad = (n) => String(n).padStart(2, '0');
+        const labels = gStudents.map(s => `${pad(s.classNo)}. ${s.name}`);
         const traces = [];
         const annotations = [];
+        const shapes = [];
         
-        if (!allSubjectMode) {
-            const subj = currentMainSubj;
-            const labels = gStudents.map(s => `${pad(s.classNo)}. ${s.name}`);
+        // ==========================================
+        // 📌 設定版面佈局配置：中、英、數各科
+        // ==========================================
+        const layouts = { 
+            chi_read: { domain: [0, 0.32], title: '中文閱讀', key: 'chi_read', color: '#1f77b4' }, 
+            eng_read: { domain: [0.34, 0.66], title: '英文閱讀', key: 'eng_read', color: '#ff7f0e' }, 
+            math: { domain: [0.68, 1], title: '數學', key: 'math', color: '#2ca02c' } 
+        };
+        
+        // 若啟動三科並列，則強制使用中讀、英讀、數學陣列；否則動態生成單科佈局
+        let activeLayouts = [];
+        if (allSubjectMode) {
+            activeLayouts = [layouts.chi_read, layouts.eng_read, layouts.math];
+        } else {
+            const subjColor = layouts[currentMainSubj] ? layouts[currentMainSubj].color : '#17a2b8';
+            const subjName = document.querySelector(`#subjectSelector option[value="${currentMainSubj}"]`).innerText;
+            activeLayouts = [{ domain: [0, 1], title: subjName, key: currentMainSubj, color: subjColor }];
+        }
+
+        activeLayouts.forEach((L, idx) => {
+            const axisName = allSubjectMode ? (idx === 0 ? 'x' : (idx === 1 ? 'x2' : 'x3')) : 'x';
+            
             const oldRawList = [];
             const newRawList = [];
             
-            gStudents.forEach((s, idx) => {
-                const newRaw = s.newScores.raw[subj];
-                const oldList = checkedOld.map(code => s.details[code]?.raw[subj]).filter(v => v !== undefined && v !== null);
+            gStudents.forEach((s, sIdx) => {
+                const newRaw = s.newScores.raw[L.key];
+                const oldList = checkedOld.map(code => s.details[code]?.raw[L.key]).filter(v => v !== undefined && v !== null);
                 const oldRawAvg = oldList.length > 0 ? ss.mean(oldList) : null;
                 
                 oldRawList.push(oldRawAvg);
                 newRawList.push(newRaw);
                 
                 if (newRaw !== null && oldRawAvg !== null) {
-                    const diff = (s.newScores.z[subj] || 0) - (s.oldScores.z[subj] || 0);
-                    const color = diff > 0.2 ? '#2ca02c' : diff < -0.2 ? '#d62728' : '#718096';
+                    const diff = (s.newScores.z[L.key] || 0) - (s.oldScores.z[L.key] || 0);
+                    const arrowColor = diff > 0.2 ? '#198754' : diff < -0.2 ? '#dc3545' : '#718096';
+                    
+                    // 繪製箭頭
                     annotations.push({
-                        x: newRaw, y: labels[idx], ax: oldRawAvg, ay: labels[idx],
-                        xref: 'x', yref: 'y', axref: 'x', ayref: 'y',
-                        showarrow: true, arrowhead: 2, arrowsize: 1, arrowwidth: 2, arrowcolor: color
+                        x: newRaw, y: labels[sIdx], ax: oldRawAvg, ay: labels[sIdx],
+                        xref: axisName, yref: 'y', axref: axisName, ayref: 'y',
+                        showarrow: true, arrowhead: 2, arrowsize: 1, arrowwidth: 1.5, arrowcolor: arrowColor
                     });
+                    // 繪製分數及差值文字
                     annotations.push({
-                        x: Math.max(oldRawAvg, newRaw) + 2.5, y: labels[idx], xref: 'x', yref: 'y',
-                        text: `${newRaw.toFixed(0)}分 (${diff >= 0 ? '+' : ''}${diff.toFixed(2)})`,
-                        showarrow: false, font: { color: color, size: 10, weight: 'bold' }, xanchor: 'left'
+                        x: Math.max(oldRawAvg, newRaw) + 2.5, y: labels[sIdx], xref: axisName, yref: 'y',
+                        text: `${newRaw.toFixed(0)}分 (ΔZ:${diff >= 0 ? '+' : ''}${diff.toFixed(2)})`,
+                        showarrow: false, font: { color: arrowColor, size: 9, weight: 'bold' }, xanchor: 'left'
                     });
                 }
             });
             
-            traces.push({ x: oldRawList, y: labels, mode: 'markers', marker: { color: '#cbd5e0', size: 10 }, name: '舊成績平均' });
-            traces.push({ x: newRawList, y: labels, mode: 'markers', marker: { color: '#198754', size: 12 }, name: '新成績' });
+            // 加入舊成績與新成績標記點 (使用對應學科的主題顏色)
+            traces.push({ x: oldRawList, y: labels, xaxis: axisName, yaxis: 'y', mode: 'markers', marker: { color: '#cbd5e0', size: 8 }, hoverinfo: 'x+y', name: '歷史舊平均', showlegend: false });
+            traces.push({ x: newRawList, y: labels, xaxis: axisName, yaxis: 'y', mode: 'markers', marker: { color: L.color, size: 10 }, hoverinfo: 'x+y', name: '最新成績', showlegend: false });
             
-        } else {
-            const multiLabels = [];
-            const oldRawList = [];
-            const newRawList = [];
-            const markerColors = [];
+            // 計算並畫出該科的全級平均線
+            const newStats = currentAnalysisResult.statsMap[currentAnalysisResult.newCodes[0]]?.[L.key]; 
+            const newGradeMean = newStats ? newStats.mean : 50;
+            const oldMeans = checkedOld.map(c => currentAnalysisResult.statsMap[c]?.[L.key]?.mean).filter(v => v !== undefined);
+            const oldGradeMean = oldMeans.length > 0 ? ss.mean(oldMeans) : 50;
+
+            shapes.push({ type: 'line', x0: oldGradeMean, x1: oldGradeMean, y0: 0, y1: 1, xref: axisName, yref: 'paper', line: { color: '#cbd5e0', width: 2, dash: 'dot' } });
+            shapes.push({ type: 'line', x0: newGradeMean, x1: newGradeMean, y0: 0, y1: 1, xref: axisName, yref: 'paper', line: { color: 'rgba(220, 53, 69, 0.8)', width: 2, dash: 'dash' } });
             
-            gStudents.forEach(s => {
-                const studentBaseLabel = `${pad(s.classNo)}. ${s.name}`;
-                const subjects = [
-                    { key: 'chi_read', name: '中', color: '#1f77b4' },
-                    { key: 'eng_read', name: '英', color: '#ff7f0e' },
-                    { key: 'math',     name: '數', color: '#2ca02c' }
-                ];
-                
-                subjects.forEach(sub => {
-                    const rowLabel = `${studentBaseLabel} (${sub.name})`;
-                    multiLabels.push(rowLabel);
-                    
-                    const newRaw = s.newScores.raw[sub.key];
-                    const oldList = checkedOld.map(code => s.details[code]?.raw[sub.key]).filter(v => v !== undefined && v !== null);
-                    const oldRawAvg = oldList.length > 0 ? ss.mean(oldList) : null;
-                    
-                    oldRawList.push(oldRawAvg);
-                    newRawList.push(newRaw);
-                    markerColors.push(sub.color);
-                    
-                    if (newRaw !== null && oldRawAvg !== null) {
-                        const diff = (s.newScores.z[sub.key] || 0) - (s.oldScores.z[sub.key] || 0);
-                        const arrowColor = diff > 0.2 ? '#2ca02c' : diff < -0.2 ? '#d62728' : '#718096';
-                        annotations.push({
-                            x: newRaw, y: rowLabel, ax: oldRawAvg, ay: rowLabel,
-                            xref: 'x', yref: 'y', axref: 'x', ayref: 'y',
-                            showarrow: true, arrowhead: 2, arrowsize: 1, arrowwidth: 1.5, arrowcolor: arrowColor
-                        });
-                        annotations.push({
-                            x: Math.max(oldRawAvg, newRaw) + 2.2, y: rowLabel, xref: 'x', yref: 'y',
-                            text: `${newRaw.toFixed(0)}分 (ΔZ:${diff >= 0 ? '+' : ''}${diff.toFixed(2)})`,
-                            showarrow: false, font: { color: sub.color, size: 9, weight: 'bold' }, xanchor: 'left'
-                        });
-                    }
-                });
+            annotations.push({
+                x: oldGradeMean, y: 1.02, xref: axisName, yref: 'paper', text: `舊均: ${oldGradeMean.toFixed(1)}分`, showarrow: false, font: { color: '#4a5568', size: 10, weight: 'bold' }, xanchor: 'center'
             });
-            
-            traces.push({ x: oldRawList, y: multiLabels, mode: 'markers', marker: { color: '#cbd5e0', size: 8 }, name: '歷史舊平均' });
-            traces.push({ x: newRawList, y: multiLabels, mode: 'markers', marker: { color: markerColors, size: 10 }, name: '最新成績' });
-        }
-        
-        const subj = currentMainSubj;
-        const newStats = currentAnalysisResult.statsMap[currentAnalysisResult.newCodes[0]][subj]; // 以第一個新評估考次作參考均值
-        const newGradeMean = newStats ? newStats.mean : 50;
-        
-        const oldMeans = [];
-        checkedOld.forEach(c => {
-            if (currentAnalysisResult.statsMap[c] && currentAnalysisResult.statsMap[c][subj]) {
-                oldMeans.push(currentAnalysisResult.statsMap[c][subj].mean);
-            }
-        });
-        const oldGradeMean = oldMeans.length > 0 ? ss.mean(oldMeans) : 50;
-        
-        annotations.push({
-            x: oldGradeMean, y: 1.02, xref: 'x', yref: 'paper',
-            text: `舊全級均分: ${oldGradeMean.toFixed(1)}分`,
-            showarrow: false, font: { color: '#4a5568', size: 11, weight: 'bold' }, xanchor: 'center'
-        });
-        annotations.push({
-            x: newGradeMean, y: 1.08, xref: 'x', yref: 'paper',
-            text: `新全級均分: ${newGradeMean.toFixed(1)}分`,
-            showarrow: false, font: { color: '#dc3545', size: 11, weight: 'bold' }, xanchor: 'center'
+            annotations.push({
+                x: newGradeMean, y: 1.08, xref: axisName, yref: 'paper', text: `新均: ${newGradeMean.toFixed(1)}分`, showarrow: false, font: { color: '#dc3545', size: 10, weight: 'bold' }, xanchor: 'center'
+            });
         });
         
-        const computedHeight = allSubjectMode ? (gStudents.length * 75) : (gStudents.length * 35);
+        const computedHeight = gStudents.length * 35;
+        const mainSubjName = document.querySelector(`#subjectSelector option[value="${currentMainSubj}"]`).innerText;
         
         const layout = {
-            title: allSubjectMode ? `群組 [${selGroup}] 中英數三學科並排啞鈴圖` : `群組 [${selGroup}] 學生個人成長分析`,
+            title: allSubjectMode ? `群組 [${selGroup}] 中英數三學科並排對照 (當前排序基準：${mainSubjName})` : `群組 [${selGroup}] 學生個人成長分析`,
             height: Math.max(420, computedHeight),
-            xaxis: { title: '原始分數 (分)', range: [0, 105], gridcolor: '#edf2f7' },
-            yaxis: { autorange: 'reversed', gridcolor: '#f7fafc', tickfont: { size: allSubjectMode ? 9 : 11 } },
-            shapes: [
-                { type: 'line', x0: oldGradeMean, x1: oldGradeMean, y0: 0, y1: 1, xref: 'x', yref: 'paper', line: { color: '#cbd5e0', width: 2, dash: 'dot' } },
-                { type: 'line', x0: newGradeMean, x1: newGradeMean, y0: 0, y1: 1, xref: 'x', yref: 'paper', line: { color: 'rgba(220, 53, 69, 0.8)', width: 2, dash: 'dash' } }
-            ],
-            annotations: annotations, showlegend: false, margin: { l: 150, r: 80, t: 50, b: 50 },
+            yaxis: { autorange: 'reversed', gridcolor: '#f7fafc', tickfont: { size: 11 }, automargin: true },
+            shapes: shapes,
+            annotations: annotations, 
+            showlegend: false, 
+            margin: { l: 150, r: 50, t: 70, b: 50 },
             plot_bgcolor: '#ffffff', paper_bgcolor: '#ffffff'
         };
+        
+        // 判斷是否啟用 Subplots (子圖) 佈局
+        if (allSubjectMode) {
+            layout.xaxis = { domain: layouts.chi_read.domain, title: '中文閱讀 (分)', range: [0, 105], gridcolor: '#edf2f7' };
+            layout.xaxis2 = { domain: layouts.eng_read.domain, title: '英文閱讀 (分)', range: [0, 105], gridcolor: '#edf2f7' };
+            layout.xaxis3 = { domain: layouts.math.domain, title: '數學 (分)', range: [0, 105], gridcolor: '#edf2f7' };
+            layout.grid = { rows: 1, columns: 3, pattern: 'independent' };
+        } else {
+            layout.xaxis = { domain: [0, 1], title: '原始分數 (分)', range: [0, 105], gridcolor: '#edf2f7' };
+        }
+        
         Plotly.newPlot('chartDetailRawScore', traces, layout, { displayModeBar: false });
     }
+
     
     // ==========================================
     // 🛠️ 輔助工具：白底匯出與狀態提示
