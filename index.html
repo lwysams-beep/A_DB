@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Z-Score 標準化成績分析系統 (v29.3</title>
+    <title>Z-Score 標準化成績分析系統 (v29.4</title>
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Chart.js & Plugins -->
@@ -93,7 +93,7 @@
         <div></div>
         <div class="text-center">
             <h1 class="fw-bold text-primary mb-1">📊 標準化成績分析系統</h1>
-            <p class="text-muted mb-0">v29.3</p>
+            <p class="text-muted mb-0">v29.4</p>
         </div>
         <div class="text-end">
             <span id="user-role-badge" class="badge me-2"></span>
@@ -1902,43 +1902,44 @@
         const listLead = []; const listGrowth = []; const listDoubleDrop = []; const listWarning = []; const listFlat = [];
         
         students.forEach(s => {
+            // 班別過濾
             if (filterClass !== 'all' && s.class !== filterClass) return;
             
-            // 🌟 加入 !isNaN() 防呆，徹底阻絕 NaN 破壞圖表
+            // 🌟 核心修正：不管打勾哪一個，我們都直接從 s.details[code] 裡面「動態」挖取原始數據與 Z-Score
             const newZList = newCodes.map(code => s.details[code]?.z[subj]).filter(v => v !== undefined && v !== null && !isNaN(v));
-            const newZAvg = newZList.length > 0 ? ss.mean(newZList) : null;
-            
             const oldZList = oldCodes.map(code => s.details[code]?.z[subj]).filter(v => v !== undefined && v !== null && !isNaN(v));
-            const oldZAvg = oldZList.length > 0 ? ss.mean(oldZList) : null;
             
-            if (newZAvg !== null && oldZAvg !== null) {
-                const xVal = oldZAvg;
-                const yVal = newZAvg - oldZAvg;
-                
-                // 🌟 同時替 tooltip 的原始分數也加上動態安全計算
-                const newRawList = newCodes.map(code => s.details[code]?.raw[subj]).filter(v => v !== undefined && v !== null);
-                const oldRawList = oldCodes.map(code => s.details[code]?.raw[subj]).filter(v => v !== undefined && v !== null);
-                const newRawAvg = newRawList.length > 0 ? ss.mean(newRawList) : 0;
-                const oldRawAvg = oldRawList.length > 0 ? ss.mean(oldRawList) : 0;
+            // 如果新舊任何一邊沒有有效成績（例如缺考），就直接跳過該學生，不畫點
+            if (newZList.length === 0 || oldZList.length === 0) return;
+            
+            const newZAvg = ss.mean(newZList);
+            const oldZAvg = ss.mean(oldZList);
+            
+            // 同時動態計算原始分數的平均（用來顯示在 Tooltip 和名冊裡）
+            const newRawList = newCodes.map(code => s.details[code]?.raw[subj]).filter(v => v !== undefined && v !== null && !isNaN(v));
+            const oldRawList = oldCodes.map(code => s.details[code]?.raw[subj]).filter(v => v !== undefined && v !== null && !isNaN(v));
+            const newRawAvg = newRawList.length > 0 ? ss.mean(newRawList) : 0;
+            const oldRawAvg = oldRawList.length > 0 ? ss.mean(oldRawList) : 0;
 
-                const item = {
-                    x: xVal, y: yVal, name: s.name, class: s.class, classNo: s.classNo, regNo: s.regNo, group: s.groupKey,
-                    oldRaw: oldRawAvg, newRaw: newRawAvg, rawDiff: newRawAvg - oldRawAvg
-                };
-                scatterData.push(item);
-                
-                // 進行四象限分類
-                if (Math.abs(yVal) <= 0.2) {
-                    listFlat.push(item);
-                } else {
-                    if (xVal >= 0 && yVal > 0.2) listLead.push(item);
-                    else if (xVal < 0 && yVal > 0.2) listGrowth.push(item);
-                    else if (xVal < 0 && yVal < -0.2) listDoubleDrop.push(item);
-                    else if (xVal >= 0 && yVal < -0.2) listWarning.push(item);
-                }
+            const xVal = oldZAvg;
+            const yVal = newZAvg - oldZAvg;
+            
+            const item = {
+                x: xVal, y: yVal, name: s.name, class: s.class, classNo: s.classNo, regNo: s.regNo, group: s.groupKey,
+                oldRaw: oldRawAvg, newRaw: newRawAvg, rawDiff: newRawAvg - oldRawAvg
+            };
+            scatterData.push(item);
+            
+            // 四象限分類邏輯
+            if (Math.abs(yVal) <= 0.2) {
+                listFlat.push(item);
+            } else {
+                if (xVal >= 0 && yVal > 0.2) listLead.push(item);
+                else if (xVal < 0 && yVal > 0.2) listGrowth.push(item);
+                else if (xVal < 0 && yVal < -0.2) listDoubleDrop.push(item);
+                else if (xVal >= 0 && yVal < -0.2) listWarning.push(item);
             }
         });
-
         
         const renderQuadTableList = (elId, list, isPositiveProgress = true) => {
             const el = document.getElementById(elId);
@@ -1968,6 +1969,10 @@
         const isSingleClassSelected = filterClass !== 'all';
         
         if (chartInstances['chartQuadrant']) chartInstances['chartQuadrant'].destroy();
+        
+        // 🌟 防呆：如果完全沒有任何有效資料（例如全部取消打勾），就不畫新圖表
+        if (scatterData.length === 0) return;
+
         chartInstances['chartQuadrant'] = new Chart(document.getElementById('chartQuadrant').getContext('2d'), {
             type: 'scatter',
             data: {
@@ -1987,17 +1992,15 @@
                 responsive: true, maintainAspectRatio: false,
                 scales: {
                     x: { 
-                        suggestedMin: -1.5, suggestedMax: 1.5, // 固定 X 軸範圍 (Z-Score 通常落在 -3 到 +3 之間)
+                        suggestedMin: -1.5, suggestedMax: 1.5,
                         title: { display: true, text: '之前評估標準成績 (舊成績 Z-Score)' } 
                     },
                     y: { 
-                        suggestedMin: -1.5, suggestedMax: 1.5, // 固定 Y 軸範圍，確保與 X 軸視覺比例 1:1
+                        suggestedMin: -1.5, suggestedMax: 1.5,
                         title: { display: true, text: '相對進退步 (ΔZ)' } 
                     }
                 },
-
                 plugins: {
-                    // 🌟 這裡就是修改 Tooltip 顯示 "陳大明: (0.719, -0.300)" 的地方
                     tooltip: {
                         callbacks: {
                             label: function(context) {
@@ -2010,7 +2013,6 @@
                     },
                     annotation: { annotations }
                 }
-
             },
             plugins: [{
                 id: 'classLabelPlugin',
@@ -2032,7 +2034,7 @@
             }]
         });
     }
-    
+
     window.renderDetailDumbbellChart = function() {
         const selGroup = document.getElementById('groupDetailSelector').value;
         const sortVal = document.getElementById('sortSelector').value;
