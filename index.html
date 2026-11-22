@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>跨年度學籍 Z-Score 智慧多維分析系統 (v23.0 - 終極大數據旗艦版)</title>
+    <title>跨年度學籍 Z-Score 智慧多維分析系統 (v24.0 - 終極大數據旗艦版)</title>
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Chart.js & Plugins -->
@@ -16,7 +16,7 @@
     <!-- Simple Statistics -->
     <script src="https://cdn.jsdelivr.net/npm/simple-statistics@7.8.3/dist/simple-statistics.min.js"></script>
     
-    <!-- Firebase SDK v10 (已更新最新 Firebase 配置) -->
+    <!-- Firebase SDK v10 -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, doc, setDoc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
@@ -69,7 +69,7 @@
         .scale-badge.active-highlight { transform: scale(1.1); box-shadow: 0 0 12px rgba(0,0,0,0.25); z-index: 10; opacity: 1 !important; }
         .quadrant-box { border-radius: 8px; padding: 10px; margin-bottom: 8px; height: 160px; overflow-y: auto; background: #fff; border: 1px solid #e2e8f0; }
         .quadrant-title { font-size: 0.85rem; font-weight: bold; margin-bottom: 5px; padding-bottom: 4px; border-bottom: 2px solid; }
-        .locked-badge { font-size: 0.75rem; background-color: #6c757d; color: white; padding: 2px 6px; border-radius: 4px; margin-left: 5px; }
+        .locked-badge { font-size: 0.75rem; background-color: #fd7e14; color: white; padding: 2px 6px; border-radius: 4px; margin-left: 5px; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -92,7 +92,7 @@
         <div></div>
         <div class="text-center">
             <h1 class="fw-bold text-primary mb-1">📊 跨年度 Z-Score 智慧多維分析系統</h1>
-            <p class="text-muted mb-0">v23.0 - 鐘形常模連動、中英數三行啞鈴、性別多維交叉對照版</p>
+            <p class="text-muted mb-0">v24.0 - 常模雙向多選、橫向常模鐘形、性別交叉對照版</p>
         </div>
         <div class="text-end">
             <span id="user-role-badge" class="badge me-2"></span>
@@ -106,14 +106,13 @@
         <div class="card-body">
             <div class="row g-3 align-items-center">
                 <div class="col-md-3">
-                    <label class="form-label fw-bold text-dark">📅 選擇現行年度 (學年) <span id="yearLockTag" style="display:none;" class="locked-badge">唯讀鎖定</span></label>
+                    <label class="form-label fw-bold text-dark">📅 選擇現行年度 (學年) <span id="yearLockTag" style="display:none;" class="locked-badge">🔒 唯讀鎖定</span></label>
                     <select id="selectSchoolYear" class="form-select border-primary" onchange="updateGradeDropdown()">
                         <option value="26">2026/2027 (26學年)</option>
                         <option value="25">2025/2026 (25學年)</option>
                         <option value="24">2024/2025 (24學年)</option>
                     </select>
                 </div>
-                <!-- 🔓 Class01 完全解除年級鎖定，自由切換 P1-P6 -->
                 <div class="col-md-4">
                     <label class="form-label fw-bold text-dark">🏫 選擇年級 (自動計算入學年)</label>
                     <select id="selectGrade" class="form-select border-primary" onchange="onCohortChanged()"></select>
@@ -132,7 +131,7 @@
         <div class="card-header bg-primary text-white">📥 數據庫建置與欄位對齊中心 (管理員專用)</div>
         <div class="card-body bg-light">
             <div class="row g-4">
-                <!-- A. 年度官方名冊上載欄 (已徹底移除出生日期) -->
+                <!-- A. 年度官方名冊上載欄 -->
                 <div class="col-md-6 border-end">
                     <h5 class="section-title text-success">👤 A. 上載「年度官方學生名冊」</h5>
                     <div class="row g-2 align-items-end">
@@ -153,7 +152,7 @@
                             <input type="file" id="fileRegistryCSV" class="form-control form-control-sm" accept=".csv" onchange="handleRegistryFileSelected(this)">
                         </div>
                     </div>
-                    <!-- 名冊欄位確認區 (無出生日期) -->
+                    <!-- 名冊欄位確認區 -->
                     <div id="registryMappingArea" class="mapping-box" style="display: none;">
                         <h6 class="fw-bold text-success mb-2">🔍 請確認名冊對應欄位 (下拉選單確認)：</h6>
                         <div class="row g-2 small">
@@ -205,12 +204,14 @@
         </div>
         <div class="card-body bg-white">
             <div class="row g-3">
+                <!-- 🌟 應您指示：舊成績與新成績旁在教師角色登入時會動態亮起 "🔒 唯讀鎖定" [2] -->
                 <div class="col-md-5 border-end">
-                    <h6 class="fw-bold text-danger">🔙 選擇舊成績 (可多選)</h6>
+                    <h6 class="fw-bold text-danger">🔙 選擇舊成績 (可多選) <span id="oldLockBadge" style="display:none;" class="locked-badge">🔒 唯讀鎖定</span></h6>
                     <div id="oldScoreCheckboxes" class="d-flex flex-wrap gap-2 py-2"></div>
                 </div>
+                <!-- 🌟 應您指示：新成績改為 Checkbox (可多選) 複選框 [1] -->
                 <div class="col-md-4 border-end">
-                    <h6 class="fw-bold text-success">🔜 選擇新成績 (限選一個作為母體基準)</h6>
+                    <h6 class="fw-bold text-success">🔜 選擇新成績 (可多選) <span id="newLockBadge" style="display:none;" class="locked-badge">🔒 唯讀鎖定</span></h6>
                     <div id="newScoreRadioGroup" class="d-flex flex-wrap gap-2 py-2"></div>
                 </div>
                 <div class="col-md-3">
@@ -292,7 +293,7 @@
             </div>
         </div>
 
-        <!-- 區塊一：各群組顯著進退步 (左) & 兩點平均分對比走勢 (右) -->
+        <!-- 各組別顯著進退步 & 兩點走勢對照圖 -->
         <div class="row g-4 mb-4">
             <div class="col-lg-6">
                 <div class="card h-100 shadow-sm">
@@ -320,7 +321,7 @@
             </div>
         </div>
 
-        <!-- 全級成績分佈隊形圖全寬展示 -->
+        <!-- 全級成績分佈隊形圖 -->
         <div class="card shadow-sm mb-4">
             <div class="card-header bg-white d-flex justify-content-between align-items-center">
                 <span class="text-primary fs-5">第一部分：全級成績分佈隊形 vs 常態分佈線 (分班堆疊顯示)</span>
@@ -332,18 +333,17 @@
             </div>
         </div>
 
-        <!-- ⚠️ 第二部分重點關注名單與常態連動鐘形圖同欄對齊 (已移除大中細B) -->
+        <!-- 第二部分重點關注名單 -->
         <div class="row g-4 mb-4">
-            <!-- 左：全科相對退步重點關注名單 -->
-            <div class="col-lg-5">
-                <div class="card h-100 shadow-sm border-start border-danger border-4">
+            <div class="col-12">
+                <div class="card shadow-sm border-start border-danger border-4">
                     <div class="card-header bg-danger text-white fw-bold">⚠️ 第二部分：重點關注 - 全科相對退步 (中+英+數)</div>
                     <div class="card-body p-0">
                         <div class="p-2 bg-light small text-muted">
                             * 註：篩選在已選評估中，中文閱讀、英文閱讀及數學均呈現相對退步 (Z-Score 減少 &lt; -0.2) 之學生名單。
                         </div>
-                        <div class="table-responsive" style="max-height: 400px;">
-                            <table class="table table-hover table-sm mb-0">
+                        <div class="table-responsive" style="max-height: 300px;">
+                            <table class="table table-hover table-sm mb-0 text-center">
                                 <thead class="table-light sticky-top">
                                     <tr>
                                         <th>班別</th>
@@ -360,36 +360,10 @@
                     </div>
                 </div>
             </div>
-            <!-- 右：常態分佈鐘形曲線位置連動圖 & 標籤尺規 -->
-            <div class="col-lg-7">
-                <div class="card h-100 shadow-sm border-start border-dark border-4">
-                    <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-                        <span>🔔 全級常模鐘形曲線位置連動 (0 毫秒極速同步常模位置)</span>
-                        <button class="btn-download" onclick="downloadChart('chartRankingBell')">📸 下載鐘形圖</button>
-                    </div>
-                    <div class="card-body">
-                        <div id="bellStudentIndicator" class="alert alert-secondary p-2 mb-2 text-center fw-bold small">
-                            👉 請將滑鼠移動至下方排行榜或地板監測名單中任一學生列，圖表將即時繪製該生的常模躍遷軌跡！
-                        </div>
-                        <div style="position: relative; height: 210px;">
-                            <canvas id="chartRankingBell"></canvas>
-                        </div>
-                        <!-- Scale Bar 程度由左至右遞增 -->
-                        <div class="scale-bar-container" id="bellScaleBar">
-                            <div class="scale-badge" style="background-color: #e53e3e;" data-badge="crash_down">斷崖式失守<span class="scale-range">&Delta;Z &le; -0.8</span></div>
-                            <div class="scale-badge" style="background-color: #dd6b20;" data-badge="sig_down">顯著滑落<span class="scale-range">-0.8 &lt; &Delta;Z &le; -0.5</span></div>
-                            <div class="scale-badge" style="background-color: #ed8936;" data-badge="mild_down">溫和退步<span class="scale-range">-0.5 &lt; &Delta;Z &le; -0.2</span></div>
-                            <div class="scale-badge" style="background-color: #718096;" data-badge="flat">穩健持平<span class="scale-range">&plusmn;0.2Z 內</span></div>
-                            <div class="scale-badge" style="background-color: #d69e2e;" data-badge="mild_up">溫和微步<span class="scale-range">+0.2 &le; &Delta;Z &lt; +0.5</span></div>
-                            <div class="scale-badge" style="background-color: #3182ce;" data-badge="sig_up">顯著進步<span class="scale-range">+0.5 &le; &Delta;Z &lt; +0.8</span></div>
-                            <div class="scale-badge" style="background-color: #198754;" data-badge="break_up">突破性躍進<span class="scale-range">&Delta;Z &ge; +0.8</span></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
 
-        <!-- 區塊二：第三部分跨多個評估均分走勢折線圖 -->
+<!-- ==================== 第 1 部分結束：請接續貼上第 2 部分的 HTML 結構 ==================== -->
+        <!-- 第三部分：跨多個評估均分走勢折線圖 -->
         <div class="card shadow-sm mb-4">
             <div class="card-header bg-white d-flex justify-content-between align-items-center">
                 <span class="text-primary fs-5">第三部分：各群組平均分跨評估走勢 (舊 vs 新 - 全歷史點)</span>
@@ -403,7 +377,34 @@
             </div>
         </div>
 
-        <!-- 🚀 區塊四：卓越進步與重點關懷雙排行榜 (標準 8 欄對照版) -->
+        <!-- 🌟 應您指示調整排版：將「全級常模鐘形曲線位置連動圖」拉橫、全寬展示，放置在折線圖正下方 [3] -->
+        <div class="card shadow-sm mb-4 border-start border-dark border-4">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <span>🔔 全級常模鐘形曲線位置連動 (指到下方任一學生時，0 毫秒極速同步常模位置)</span>
+                <button class="btn-download" onclick="downloadChart('chartRankingBell')">📸 下載鐘形圖</button>
+            </div>
+            <div class="card-body">
+                <div id="bellStudentIndicator" class="alert alert-secondary p-2 mb-2 text-center fw-bold small">
+                    👉 請將滑鼠移動至下方排行榜或地板監測名單中任一學生列，圖表將即時繪製該生的常模躍遷軌跡！
+                </div>
+                <!-- 拉橫全寬展示，高度定為 230px 保持精緻緊湊 -->
+                <div style="position: relative; height: 230px; width: 100%;">
+                    <canvas id="chartRankingBell"></canvas>
+                </div>
+                <!-- 🌟 程度尺規：順序已調整為從左側「斷崖式失守」一路遞增到右側「突破性躍進」 [2] -->
+                <div class="scale-bar-container" id="bellScaleBar">
+                    <div class="scale-badge" style="background-color: #e53e3e;" data-badge="crash_down">斷崖式失守<span class="scale-range">ΔZ &le; -0.8</span></div>
+                    <div class="scale-badge" style="background-color: #dd6b20;" data-badge="sig_down">顯著滑落<span class="scale-range">-0.8 &lt; ΔZ &le; -0.5</span></div>
+                    <div class="scale-badge" style="background-color: #ed8936;" data-badge="mild_down">溫和退步<span class="scale-range">-0.5 &lt; ΔZ &le; -0.2</span></div>
+                    <div class="scale-badge" style="background-color: #718096;" data-badge="flat">穩健持平<span class="scale-range">±0.2Z 內</span></div>
+                    <div class="scale-badge" style="background-color: #d69e2e;" data-badge="mild_up">溫和微步<span class="scale-range">+0.2 &le; ΔZ &lt; +0.5</span></div>
+                    <div class="scale-badge" style="background-color: #3182ce;" data-badge="sig_up">顯著進步<span class="scale-range">+0.5 &le; ΔZ &lt; +0.8</span></div>
+                    <div class="scale-badge" style="background-color: #198754;" data-badge="break_up">突破性躍進<span class="scale-range">ΔZ &ge; +0.8</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 🚀 卓越進步與重點關懷雙排行榜 -->
         <div class="row g-4 mb-4">
             <div class="col-md-6">
                 <div class="card shadow-sm border-start border-success border-4 h-100">
@@ -418,7 +419,7 @@
                                         <th>姓名</th>
                                         <th>舊 Z</th>
                                         <th>新 Z</th>
-                                        <th>🎯 相對進步幅度 (&Delta;Z)</th>
+                                        <th>🎯 相對進步幅度 (ΔZ)</th>
                                         <th>級名次</th>
                                         <th>分數變遷</th>
                                         <th>淨變動</th>
@@ -443,7 +444,7 @@
                                         <th>姓名</th>
                                         <th>舊 Z</th>
                                         <th>新 Z</th>
-                                        <th>⚠️ 相對退步幅度 (&Delta;Z)</th>
+                                        <th>⚠️ 相對退步幅度 (ΔZ)</th>
                                         <th>級名次</th>
                                         <th>分數變遷</th>
                                         <th>淨變動</th>
@@ -457,10 +458,10 @@
             </div>
         </div>
 
-        <!-- 🌟 區塊五：基礎能力監測名單 (成績 < 35分 地板群組，已移除大中細B) -->
+        <!-- ⚠️ 基礎能力監測名單 (成績 < 35分 地板群組，不計入名次) -->
         <div class="card shadow-sm mb-4 border-start border-warning border-4">
             <div class="card-header bg-warning text-dark fw-bold d-flex justify-content-between align-items-center">
-                <span>⚠️ 基礎能力監測名單 (成績 &lt; 35分 地板猜測區獨立追蹤 - 不參與 &Delta;Z 排行)</span>
+                <span>⚠️ 基礎能力監測名單 (成績 &lt; 35分 地板猜測區獨立追蹤 - 不參與 ΔZ 排行)</span>
                 <span class="badge bg-dark" id="floorCountBadge">0 人</span>
             </div>
             <div class="card-body p-0">
@@ -487,19 +488,13 @@
             </div>
         </div>
 
-        <!-- 區塊六：學生學習狀態四象限分佈圖 & 右側四象限分類名冊 (最底含穩健持平) -->
+        <!-- 📊 第二部分：學生學習狀態四象限分佈圖 & 右側分類名冊 (已完全刪除趨勢向量模式，並更新色彩) [4, 5] -->
         <div class="row g-4 mb-4">
             <div class="col-lg-7">
                 <div class="card h-100 shadow-sm border-start border-info border-4">
                     <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
                         <span>第二部分：學生學習狀態四象限分佈圖</span>
-                        <div class="d-flex align-items-center gap-2">
-                            <div class="form-check form-switch mb-0">
-                                <input class="form-check-input" type="checkbox" id="quadrantTrendMode" onchange="renderQuadrantWithFilter()">
-                                <label class="form-check-label text-white small" for="quadrantTrendMode">📊 趨勢向量模式</label>
-                            </div>
-                            <button class="btn-download" style="background-color: rgba(255,255,255,0.2);" onclick="downloadChart('chartQuadrant')">📸 下載</button>
-                        </div>
+                        <button class="btn-download" style="background-color: rgba(255,255,255,0.2);" onclick="downloadChart('chartQuadrant')">📸 下載</button>
                     </div>
                     <div class="card-body">
                         <div class="d-flex align-items-center mb-2 bg-light p-2 rounded">
@@ -511,7 +506,7 @@
                     </div>
                 </div>
             </div>
-            <!-- 右側四象限分類名冊 -->
+            <!-- 右側四象限分類名冊 (配合班別篩選，且最底包含穩健持平，更新色彩) [3, 5] -->
             <div class="col-lg-5">
                 <div class="card h-100 shadow-sm border-start border-secondary border-4">
                     <div class="card-header bg-secondary text-white fw-bold">📋 學生學習狀態四象限名冊 (配合班別篩選)</div>
@@ -523,9 +518,10 @@
                                     <div id="quadList_lead" class="small"></div>
                                 </div>
                             </div>
+                            <!-- 🌟 應您指示：逆勢成長 (第二象限) 改成「🔵藍色」 [5] -->
                             <div class="col-6">
                                 <div class="quadrant-box">
-                                    <div class="quadrant-title text-warning border-warning" style="color: #d97706 !important;">🟡 逆勢成長 (第二象限)</div>
+                                    <div class="quadrant-title text-primary border-primary">🔵 逆勢成長 (第二象限)</div>
                                     <div id="quadList_growth" class="small"></div>
                                 </div>
                             </div>
@@ -535,15 +531,16 @@
                                     <div id="quadList_double_drop" class="small"></div>
                                 </div>
                             </div>
+                            <!-- 🌟 應您指示：警訊高分 (第四象限) 改成「🟡黃色」 [5] -->
                             <div class="col-6">
-                                <div class="quadrant-box">
-                                    <div class="quadrant-title text-secondary border-secondary" style="color: #fd7e14 !important;">🟠 警訊高分 (第四象限)</div>
+                                <div class="quadrant-box" style="border-color: #d69e2e !important;">
+                                    <div class="quadrant-title text-warning border-warning" style="color: #d69e2e !important; border-bottom-color: #d69e2e !important;">🟡 警訊高分 (第四象限)</div>
                                     <div id="quadList_warning" class="small"></div>
                                 </div>
                             </div>
                             <div class="col-12">
                                 <div class="quadrant-box" style="height: 120px;">
-                                    <div class="quadrant-title text-dark border-dark" style="color: #718096 !important; border-bottom-color: #718096 !important;">⚖️ 穩健持平 (&Delta;Z 在 &plusmn;0.2 內)</div>
+                                    <div class="quadrant-title text-dark border-dark" style="color: #718096 !important; border-bottom-color: #718096 !important;">⚖️ 穩健持平 (ΔZ 在 ±0.2 內)</div>
                                     <div id="quadList_flat" class="small"></div>
                                 </div>
                             </div>
@@ -553,7 +550,7 @@
             </div>
         </div>
 
-        <!-- 區塊七：第四部分 - 學生成績詳細分析 (經典模式啞鈴圖) -->
+        <!-- 第四部分：學生成績詳細分析 (經典模式啞鈴圖，支援中英數三行並排與自然班號排序) [4] -->
         <div class="card shadow-sm mb-4">
             <div class="card-header bg-white">
                 <div class="d-flex justify-content-between align-items-center flex-wrap g-2">
@@ -586,1529 +583,1540 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
-<!-- ==================== 第 1 部分結束：請在此處銜接第 2 部分的 <script> ==================== -->
-    <script>
-        // ==========================================
-        // 📌 全域變數與系統常數定義
-        // ==========================================
-        let currentUserRole = 'viewer';
-        const ADMIN_EMAIL = "lwysams@bcklas.edu.hk";
-        const RESTRICTED_TEACHER_EMAIL = "class01@bcklas.edu.hk";
+<!-- ==================== 第 2 部分結束：請接續貼上第 3 部分的 JavaScript 邏輯 ==================== -->
+<script>
+    // ==========================================
+    // 📌 全域變數與系統常數定義
+    // ==========================================
+    let currentUserRole = 'viewer';
+    const ADMIN_EMAIL = "lwysams@bcklas.edu.hk";
+    const RESTRICTED_TEACHER_EMAIL = "class01@bcklas.edu.hk";
+    
+    // 🔒 教師帳戶規定的鎖定條件
+    const TEACHER_RESTRICTIONS = {
+        schoolYear: "26",
+        oldScores: ["25_P1T2A2"],
+        newScores: ["26_P2T1A1"] // 支援新成績多選鎖定
+    };
+    
+    let cohortAssessments = [];
+    let activeOldAssess = [];
+    let activeNewAssess = []; // 升級為陣列，支援多選新成績 [1]
+    let chartInstances = {};
+    let parsedTempRegistryRows = null;
+    let parsedTempScoreRows = null;
+    let rankingStudentsList = [];
+    let currentAnalysisResult = null;
+    
+    const SUBJECT_KEYS = {
+        'chi_read': ['中讀', '中文閱讀', '閱讀'],
+        'chi_dict': ['中默', '中文默書', '默書'],
+        'eng_read': ['英讀', '英文閱讀', 'reading'],
+        'eng_dict': ['英默', '英文默書', 'dictation'],
+        'math': ['數學', 'maths', 'mathematics']
+    };
+    
+    // ==========================================
+    // 🔒 身份驗證與 Firebase 監聽機制
+    // ==========================================
+    window.addEventListener('firebaseReady', () => {
+        window.onAuthStateChanged(window.auth, (user) => {
+            if (user) {
+                document.getElementById('login-overlay').style.display = 'none';
+                document.getElementById('main-app').style.display = 'block';
+                document.getElementById('user-email-display').innerText = user.email;
+                
+                const userEmail = user.email.toLowerCase();
+                
+                if (userEmail === ADMIN_EMAIL.toLowerCase()) {
+                    currentUserRole = 'admin';
+                    document.getElementById('user-role-badge').innerText = '管理員';
+                    document.getElementById('user-role-badge').className = 'badge bg-danger';
+                    document.getElementById('uploadSection').style.display = 'block';
+                    document.getElementById('selectSchoolYear').disabled = false;
+                    document.getElementById('selectGrade').disabled = false;
+                    document.getElementById('yearLockTag').style.display = 'none';
+                    document.getElementById('oldLockBadge').style.display = 'none';
+                    document.getElementById('newLockBadge').style.display = 'none';
+                    updateGradeDropdown();
+                } else if (userEmail === RESTRICTED_TEACHER_EMAIL.toLowerCase()) {
+                    // 🔒 Class01：學年唯讀，年級解鎖，分析控制台亮起 "🔒 唯讀鎖定" 橘色標籤 [1, 2]
+                    currentUserRole = 'restricted_teacher';
+                    document.getElementById('user-role-badge').innerText = '教師 ( Class01 )';
+                    document.getElementById('user-role-badge').className = 'badge bg-warning text-dark';
+                    document.getElementById('uploadSection').style.display = 'none';
+                    
+                    document.getElementById('selectSchoolYear').value = TEACHER_RESTRICTIONS.schoolYear;
+                    document.getElementById('selectSchoolYear').disabled = true;
+                    document.getElementById('yearLockTag').style.display = 'inline-block';
+                    document.getElementById('selectGrade').disabled = false; // 年級完全解鎖 [1]
+                    
+                    document.getElementById('oldLockBadge').style.display = 'inline-block';
+                    document.getElementById('newLockBadge').style.display = 'inline-block';
+                    
+                    updateGradeDropdown();
+                } else {
+                    currentUserRole = 'viewer';
+                    document.getElementById('user-role-badge').innerText = '老師 (唯讀)';
+                    document.getElementById('user-role-badge').className = 'badge bg-success';
+                    document.getElementById('uploadSection').style.display = 'none';
+                    updateGradeDropdown();
+                }
+            } else {
+                document.getElementById('login-overlay').style.display = 'flex';
+                document.getElementById('main-app').style.display = 'none';
+            }
+        });
+    });
+    
+    window.performLogin = function() {
+        const email = document.getElementById('loginEmail').value.trim();
+        const pass = document.getElementById('loginPass').value.trim();
+        const msg = document.getElementById('loginMsg');
+        const btn = document.getElementById('btnLoginBtn');
         
-        // 🔒 教師帳戶規定的鎖定條件 (學年鎖定，年級自由開放)
-        const TEACHER_RESTRICTIONS = {
-            schoolYear: "26"
+        if (!email || !pass) { msg.innerText = "請輸入完整帳號密碼"; return; }
+        btn.disabled = true; btn.innerText = "驗證中..."; msg.innerText = "";
+        
+        const loginTimeout = setTimeout(() => {
+            if (btn.disabled) {
+                btn.disabled = false; btn.innerText = "登入系統";
+                msg.innerText = "連線逾時。請檢查網路連線或確認 Firebase Authentication 帳號狀態。";
+            }
+        }, 12000);
+        
+        window.signInWithEmailAndPassword(window.auth, email, pass)
+            .then(() => {
+                clearTimeout(loginTimeout);
+                btn.disabled = false; btn.innerText = "登入系統";
+            })
+            .catch((error) => {
+                clearTimeout(loginTimeout);
+                btn.disabled = false; btn.innerText = "登入系統";
+                msg.innerText = "登入失敗：請確認帳號密碼正確，且具有白名單存取權限。";
+            });
+    };
+    
+    window.performLogout = function() { window.signOut(window.auth); };
+    
+    // ==========================================
+    // 🏫 學年、年級換算與同屆學籍撈取
+    // ==========================================
+    function updateGradeDropdown() {
+        const year = parseInt(document.getElementById('selectSchoolYear').value);
+        const selectGrade = document.getElementById('selectGrade');
+        selectGrade.innerHTML = '';
+        
+        for (let g = 1; g <= 6; g++) {
+            const entranceYear = year - g + 1;
+            const option = new Option(`P${g} (${entranceYear}年入學)`, `P${g}`);
+            option.dataset.entrance = entranceYear;
+            selectGrade.add(option);
+        }
+        onCohortChanged();
+    }
+    
+    async function onCohortChanged() {
+        const year = parseInt(document.getElementById('selectSchoolYear').value);
+        const grade = document.getElementById('selectGrade').value;
+        const gradeNum = parseInt(grade.replace('P', ''));
+        const cohortEntranceYear = year - gradeNum + 1;
+        
+        document.getElementById('cohortStatusLabel').innerText = `ℹ️ 追蹤學童：${cohortEntranceYear} 年入學的同屆學生`;
+        showStatus(`⏳ 正在讀取 ${cohortEntranceYear} 年入學之歷年成績...`, 'warning');
+        
+        try {
+            const querySnapshot = await window.getDocs(window.collection(window.db, "CrossYearScores_v2"));
+            cohortAssessments = [];
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                const aYear = parseInt(data.year);
+                const aGrade = parseInt(data.grade.replace('P',''));
+                const aEntrance = aYear - aGrade + 1;
+                if (aEntrance === cohortEntranceYear) {
+                    cohortAssessments.push(data);
+                }
+            });
+            renderAssessmentCheckboxes();
+            
+            // 🔒 若為 Class01，自動勾選該年級對應評估並啟動分析 [1]
+            if (currentUserRole === 'restricted_teacher') {
+                document.querySelectorAll('input[name="globalOld"]').forEach(el => {
+                    el.checked = el.value.includes('T2A2');
+                    el.disabled = true;
+                });
+                document.querySelectorAll('input[name="globalNew"]').forEach(el => {
+                    el.checked = el.value.includes('T1A1');
+                    el.disabled = true;
+                });
+                
+                setTimeout(() => {
+                    const checkedOld = Array.from(document.querySelectorAll('input[name="globalOld"]:checked')).map(el => el.value);
+                    const checkedNew = Array.from(document.querySelectorAll('input[name="globalNew"]:checked')).map(el => el.value);
+                    if (checkedNew.length > 0 && checkedOld.length > 0) {
+                        activeOldAssess = checkedOld;
+                        activeNewAssess = checkedNew;
+                        performCalculation(activeOldAssess, activeNewAssess, ['class']);
+                    }
+                }, 300);
+            }
+            
+            if (cohortAssessments.length > 0) {
+                showStatus(`✅ 成功撈取到 ${cohortAssessments.length} 次同屆相關評估紀錄。`, 'success');
+            } else {
+                showStatus(`ℹ️ 目前資料庫中暫無此屆學生的成績，請先在上載區進行新增。`, 'secondary');
+            }
+        } catch (err) {
+            showStatus(`❌ 讀取資料庫失敗: ${err.message}`, 'danger');
+        }
+    }
+    
+    function renderAssessmentCheckboxes() {
+        const oldContainer = document.getElementById('oldScoreCheckboxes');
+        const newContainer = document.getElementById('newScoreRadioGroup');
+        oldContainer.innerHTML = ''; newContainer.innerHTML = '';
+        
+        if (cohortAssessments.length === 0) {
+            oldContainer.innerHTML = '<span class="text-muted small">無可用評估</span>';
+            newContainer.innerHTML = '<span class="text-muted small">無可用評估</span>';
+            return;
+        }
+        
+        cohortAssessments.sort((a,b) => a.code.localeCompare(b.code));
+        cohortAssessments.forEach((assess) => {
+            const divOld = document.createElement('div');
+            divOld.className = 'form-check form-check-inline';
+            divOld.innerHTML = `
+                <input class="form-check-input" type="checkbox" name="globalOld" value="${assess.code}" id="old_${assess.code}">
+                <label class="form-check-label" for="old_${assess.code}">${assess.code}</label>
+            `;
+            oldContainer.appendChild(divOld);
+            
+            // 🌟 新成績升級為 Checkbox 多選樣式 [1]
+            const divNew = document.createElement('div');
+            divNew.className = 'form-check form-check-inline';
+            divNew.innerHTML = `
+                <input class="form-check-input" type="checkbox" name="globalNew" value="${assess.code}" id="new_${assess.code}">
+                <label class="form-check-label" for="new_${assess.code}">${assess.code}</label>
+            `;
+            newContainer.appendChild(divNew);
+        });
+    }
+    
+    window.enforceDimensionLimit = function(el) {
+        const checkedDims = document.querySelectorAll('.group-dimension:checked');
+        if (checkedDims.length > 2) {
+            alert("分析維度最多只能同時選擇 2 項！");
+            el.checked = false;
+        } else if (checkedDims.length === 0) {
+            alert("至少需保留 1 個分析維度！");
+            el.checked = true;
+        }
+    };
+    
+    // ==========================================
+    // 📥 數據解析與上傳管理 (無出生日期與大中細B)
+    // ==========================================
+    function parseCSV(file, callback) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const text = e.target.result;
+            const encoding = text.includes('Reg') || text.includes('姓名') || text.includes('班別') ? "utf-8" : "big5";
+            Papa.parse(file, {
+                header: false, skipEmptyLines: true, encoding: encoding,
+                complete: (res) => callback(null, res.data),
+                error: (err) => callback(err, null)
+            });
+        };
+        reader.readAsText(file.slice(0, 5000));
+    }
+    
+    function parseGender(val) {
+        if (!val) return '未知';
+        const s = String(val).trim().toUpperCase();
+        if (['M', '1', '男', 'MALE'].includes(s)) return '男';
+        if (['F', '2', '女', 'FEMALE'].includes(s)) return '女';
+        return s;
+    }
+    
+    window.handleRegistryFileSelected = function(fileEl) {
+        if (!fileEl.files || fileEl.files.length === 0) return;
+        parseCSV(fileEl.files[0], (err, rows) => {
+            if (err || !rows || rows.length === 0) { alert("讀取 CSV 失敗"); return; }
+            parsedTempRegistryRows = rows;
+            let headerIdx = rows.findIndex(r => r.some(c => String(c).includes('Reg') || String(c).includes('編號') || String(c).includes('學號')));
+            if (headerIdx === -1) headerIdx = 0;
+            const headers = rows[headerIdx].map(h => String(h || '').trim());
+            
+            const populateSelect = (selectId, matchKeywords) => {
+                const el = document.getElementById(selectId);
+                el.innerHTML = '<option value="">--請選擇--</option>';
+                headers.forEach(h => {
+                    const opt = new Option(h, h);
+                    if (matchKeywords.some(k => h.includes(k))) opt.selected = true;
+                    el.add(opt);
+                });
+            };
+            populateSelect('mapReg_id', ['*Reg. No.', '學生註冊編號', '註冊編號', '學號', '入學編號']);
+            populateSelect('mapReg_name', ['姓名', 'Name', '中文姓名']);
+            populateSelect('mapReg_class', ['班別', 'Class', '組']);
+            populateSelect('mapReg_gender', ['性別代碼', '性別', 'Gender', 'Sex']);
+            populateSelect('mapReg_classno', ['班號', 'Class No.', '座號', '學號']);
+            document.getElementById('registryMappingArea').style.display = 'block';
+        });
+    };
+    
+    window.commitRegistryUpload = async function() {
+        const year = document.getElementById('regYearInput').value.trim();
+        const grade = document.getElementById('regGradeInput').value;
+        const colId = document.getElementById('mapReg_id').value;
+        const colName = document.getElementById('mapReg_name').value;
+        const colClass = document.getElementById('mapReg_class').value;
+        const colGender = document.getElementById('mapReg_gender').value;
+        const colClassNo = document.getElementById('mapReg_classno').value;
+        
+        if (!colId || !colName || !colClass) { alert("學號、姓名、班別為必選欄位！"); return; }
+        
+        showStatus("⏳ 正在建立並寫入官方年度名冊至雲端...", "warning");
+        const headers = parsedTempRegistryRows[0].map(h => String(h || '').trim());
+        const dataRows = parsedTempRegistryRows.slice(1);
+        const registryMap = {};
+        
+        const idIdx = headers.indexOf(colId);
+        const nameIdx = headers.indexOf(colName);
+        const classIdx = headers.indexOf(colClass);
+        const genderIdx = colGender ? headers.indexOf(colGender) : -1;
+        const classNoIdx = colClassNo ? headers.indexOf(colClassNo) : -1;
+        
+        dataRows.forEach(row => {
+            const regNo = (idIdx !== -1 && row[idIdx]) ? String(row[idIdx]).trim().replace(/#/g, '') : '';
+            if (!regNo) return;
+            const name = (nameIdx !== -1 && row[nameIdx]) ? String(row[nameIdx]).trim() : '未登錄';
+            const cls = (classIdx !== -1 && row[classIdx]) ? String(row[classIdx]).trim() : '未分班';
+            const genderRaw = (genderIdx !== -1 && row[genderIdx]) ? row[genderIdx] : '';
+            const classNoRaw = (classNoIdx !== -1 && row[classNoIdx]) ? row[classNoIdx] : '';
+            const classNoInt = parseInt(String(classNoRaw).trim(), 10);
+            
+            registryMap[regNo] = {
+                name, class: cls, gender: parseGender(genderRaw), classNo: isNaN(classNoInt) ? 99 : classNoInt
+            };
+        });
+        
+        try {
+            const registryDocId = `${year}_${grade}_Registry`;
+            await window.setDoc(window.doc(window.db, "StudentRegistry_v2", registryDocId), {
+                year: parseInt(year), grade: grade, lastUpdated: new Date().toISOString(), registry: registryMap
+            });
+            showStatus(`✅ 官方年度名冊建置成功！(共 ${Object.keys(registryMap).length} 位學生)`, "success");
+            alert(`官方名冊儲存成功！\n人數: ${Object.keys(registryMap).length}`);
+        } catch (err) {
+            showStatus(`❌ 儲存名冊失敗: ${err.message}`, "danger");
+        }
+    };
+    
+    window.handleScoreFileSelected = function(fileEl) {
+        if (!fileEl.files || fileEl.files.length === 0) return;
+        parseCSV(fileEl.files[0], (err, rows) => {
+            if (err || !rows || rows.length === 0) { alert("讀取成績 CSV 失敗"); return; }
+            parsedTempScoreRows = rows;
+            let headerIdx = rows.findIndex(r => r.some(c => String(c).includes('Reg') || String(c).includes('編號') || String(c).includes('學號')));
+            if (headerIdx === -1) headerIdx = 0;
+            const headers = rows[headerIdx].map(h => String(h || '').trim());
+            
+            const populateSelect = (selectId, matchKeywords) => {
+                const el = document.getElementById(selectId);
+                el.innerHTML = '<option value="">--不採計--</option>';
+                headers.forEach(h => {
+                    const opt = new Option(h, h);
+                    if (matchKeywords.some(k => h.includes(k))) opt.selected = true;
+                    el.add(opt);
+                });
+            };
+            populateSelect('mapScore_id', ['*Reg. No.', '學生註冊編號', '學號', '入學編號']);
+            populateSelect('mapScore_math', ['數學', 'math']);
+            populateSelect('mapScore_chiread', ['中讀', '中文閱讀', '閱讀']);
+            populateSelect('mapScore_chidict', ['中默', '中文默書', '默書']);
+            populateSelect('mapScore_engread', ['英讀', '英文閱讀', 'reading']);
+            populateSelect('mapScore_engdict', ['英默', '英文默書', 'dictation']);
+            document.getElementById('scoreMappingArea').style.display = 'block';
+        });
+    };
+    
+    window.commitScoreUpload = async function() {
+        const code = document.getElementById('inputAssessCode').value.trim();
+        const match = code.match(/^(\d+)(P\d)(.+)$/i);
+        if (!match) { alert("評估代號格式錯誤，必須如 '26P3T1'"); return; }
+        
+        const year = parseInt(match[1]);
+        const grade = match[2].toUpperCase();
+        const term = match[3].toUpperCase();
+        const colId = document.getElementById('mapScore_id').value;
+        if (!colId) { alert("必須選擇學號對應欄位！"); return; }
+        
+        showStatus("⏳ 正在建立學期成績數據，並與官方名冊對齊聯動...", "warning");
+        
+        let registryMap = {};
+        try {
+            const regSnap = await window.getDoc(window.doc(window.db, "StudentRegistry_v2", `${year}_${grade}_Registry`));
+            if (regSnap.exists()) registryMap = regSnap.data().registry;
+        } catch(e) { console.warn("未發現官方名冊，使用純成績表資料。"); }
+        
+        const headers = parsedTempScoreRows[0].map(h => String(h || '').trim());
+        const dataRows = parsedTempScoreRows.slice(1);
+        const getVal = (row, selectId) => {
+            const col = document.getElementById(selectId).value;
+            if (!col) return null;
+            const idx = headers.indexOf(col);
+            if (idx === -1) return null;
+            const num = parseFloat(row[idx]);
+            return isNaN(num) ? null : num;
         };
         
-        let cohortAssessments = [];
-        let activeOldAssess = [];
-        let activeNewAssess = null;
-        let chartInstances = {};
-        let parsedTempRegistryRows = null;
-        let parsedTempScoreRows = null;
-        let rankingStudentsList = [];
-        let currentAnalysisResult = null;
-        
-        // ==========================================
-        // 🔒 身份驗證與 Firebase 監聽機制
-        // ==========================================
-        window.addEventListener('firebaseReady', () => {
-            window.onAuthStateChanged(window.auth, (user) => {
-                if (user) {
-                    document.getElementById('login-overlay').style.display = 'none';
-                    document.getElementById('main-app').style.display = 'block';
-                    document.getElementById('user-email-display').innerText = user.email;
-                    
-                    const userEmail = user.email.toLowerCase();
-                    
-                    if (userEmail === ADMIN_EMAIL.toLowerCase()) {
-                        currentUserRole = 'admin';
-                        document.getElementById('user-role-badge').innerText = '管理員';
-                        document.getElementById('user-role-badge').className = 'badge bg-danger';
-                        document.getElementById('uploadSection').style.display = 'block';
-                        document.getElementById('selectSchoolYear').disabled = false;
-                        document.getElementById('selectGrade').disabled = false;
-                        document.getElementById('yearLockTag').style.display = 'none';
-                        updateGradeDropdown();
-                    } else if (userEmail === RESTRICTED_TEACHER_EMAIL.toLowerCase()) {
-                        // 🔓 Class01：學年鎖定，但年級完全解鎖自由切換
-                        currentUserRole = 'restricted_teacher';
-                        document.getElementById('user-role-badge').innerText = '教師 ( Class01 )';
-                        document.getElementById('user-role-badge').className = 'badge bg-warning text-dark';
-                        document.getElementById('uploadSection').style.display = 'none';
-                        
-                        document.getElementById('selectSchoolYear').value = TEACHER_RESTRICTIONS.schoolYear;
-                        document.getElementById('selectSchoolYear').disabled = true;
-                        document.getElementById('yearLockTag').style.display = 'inline-block';
-                        document.getElementById('selectGrade').disabled = false;
-                        
-                        updateGradeDropdown();
-                    } else {
-                        currentUserRole = 'viewer';
-                        document.getElementById('user-role-badge').innerText = '老師 (唯讀)';
-                        document.getElementById('user-role-badge').className = 'badge bg-success';
-                        document.getElementById('uploadSection').style.display = 'none';
-                        updateGradeDropdown();
-                    }
-                } else {
-                    document.getElementById('login-overlay').style.display = 'flex';
-                    document.getElementById('main-app').style.display = 'none';
-                }
+        const idIdx = headers.indexOf(colId);
+        const studentsList = [];
+        dataRows.forEach(row => {
+            const regNo = (idIdx !== -1 && row[idIdx]) ? String(row[idIdx]).trim().replace(/#/g, '') : '';
+            if (!regNo) return;
+            const regInfo = registryMap[regNo] || {};
+            
+            studentsList.push({
+                regNo: regNo,
+                name: regInfo.name || '未登錄',
+                class: regInfo.class || '未分班',
+                gender: regInfo.gender || '未知',
+                classNo: regInfo.classNo || 99,
+                chi_read: getVal(row, 'mapScore_chiread'),
+                chi_dict: getVal(row, 'mapScore_chidict'),
+                eng_read: getVal(row, 'mapScore_engread'),
+                eng_dict: getVal(row, 'mapScore_engdict'),
+                math: getVal(row, 'mapScore_math')
             });
         });
         
-        window.performLogin = function() {
-            const email = document.getElementById('loginEmail').value.trim();
-            const pass = document.getElementById('loginPass').value.trim();
-            const msg = document.getElementById('loginMsg');
-            const btn = document.getElementById('btnLoginBtn');
-            
-            if (!email || !pass) { msg.innerText = "請輸入完整帳號密碼"; return; }
-            btn.disabled = true; btn.innerText = "驗證中..."; msg.innerText = "";
-            
-            const loginTimeout = setTimeout(() => {
-                if (btn.disabled) {
-                    btn.disabled = false; btn.innerText = "登入系統";
-                    msg.innerText = "連線逾時。請檢查網路連線或確認 Firebase Authentication 帳號狀態。";
-                }
-            }, 12000);
-            
-            window.signInWithEmailAndPassword(window.auth, email, pass)
-                .then(() => {
-                    clearTimeout(loginTimeout);
-                    btn.disabled = false; btn.innerText = "登入系統";
-                })
-                .catch((error) => {
-                    clearTimeout(loginTimeout);
-                    btn.disabled = false; btn.innerText = "登入系統";
-                    msg.innerText = "登入失敗：請確認帳號密碼正確，且具有白名單存取權限。";
-                });
-        };
-        
-        window.performLogout = function() { window.signOut(window.auth); };
-        
-        // ==========================================
-        // 🏫 學年、年級換算與同屆學籍撈取
-        // ==========================================
-        function updateGradeDropdown() {
-            const year = parseInt(document.getElementById('selectSchoolYear').value);
-            const selectGrade = document.getElementById('selectGrade');
-            selectGrade.innerHTML = '';
-            
-            for (let g = 1; g <= 6; g++) {
-                const entranceYear = year - g + 1;
-                const option = new Option(`P${g} (${entranceYear}年入學)`, `P${g}`);
-                option.dataset.entrance = entranceYear;
-                selectGrade.add(option);
-            }
+        try {
+            await window.setDoc(window.doc(window.db, "CrossYearScores_v2", code), {
+                code, year, grade, term, lastUpdated: new Date().toISOString(), students: studentsList
+            });
+            showStatus(`✅ 評估 ${code} 成功儲存與對齊！`, "success");
+            alert(`成績單儲存成功！共關聯 ${studentsList.length} 位學童。`);
             onCohortChanged();
+        } catch (err) {
+            showStatus(`❌ 儲存成績單失敗: ${err.message}`, "danger");
         }
+    };
+    
+    // ==========================================
+    // 📊 多維分析與雙向多選 Z-Score 運算引擎 [1]
+    // ==========================================
+    window.triggerMainAnalysis = function() {
+        const checkedOld = Array.from(document.querySelectorAll('input[name="globalOld"]:checked')).map(el => el.value);
+        const checkedNew = Array.from(document.querySelectorAll('input[name="globalNew"]:checked')).map(el => el.value);
         
-        async function onCohortChanged() {
-            const year = parseInt(document.getElementById('selectSchoolYear').value);
-            const grade = document.getElementById('selectGrade').value;
-            const gradeNum = parseInt(grade.replace('P', ''));
-            const cohortEntranceYear = year - gradeNum + 1;
-            
-            document.getElementById('cohortStatusLabel').innerText = `ℹ️ 追蹤學童：${cohortEntranceYear} 年入學的同屆學生`;
-            showStatus(`⏳ 正在讀取 ${cohortEntranceYear} 年入學之歷年成績...`, 'warning');
-            
-            try {
-                const querySnapshot = await window.getDocs(window.collection(window.db, "CrossYearScores_v2"));
-                cohortAssessments = [];
-                querySnapshot.forEach((doc) => {
-                    const data = doc.data();
-                    const aYear = parseInt(data.year);
-                    const aGrade = parseInt(data.grade.replace('P',''));
-                    const aEntrance = aYear - aGrade + 1;
-                    if (aEntrance === cohortEntranceYear) {
-                        cohortAssessments.push(data);
-                    }
-                });
-                renderAssessmentCheckboxes();
-                
-                // 🔒 若為 Class01，自動勾選該年級對應評估並啟動分析
-                if (currentUserRole === 'restricted_teacher') {
-                    document.querySelectorAll('input[name="globalOld"]').forEach(el => {
-                        el.checked = el.value.includes('T2A2');
-                        el.disabled = true;
-                    });
-                    document.querySelectorAll('input[name="globalNew"]').forEach(el => {
-                        el.checked = el.value.includes('T1A1');
-                        el.disabled = true;
-                    });
-                    
-                    setTimeout(() => {
-                        const checkedOld = Array.from(document.querySelectorAll('input[name="globalOld"]:checked')).map(el => el.value);
-                        const selectedNew = document.querySelector('input[name="globalNew"]:checked')?.value;
-                        if (selectedNew && checkedOld.length > 0) {
-                            activeOldAssess = checkedOld;
-                            activeNewAssess = selectedNew;
-                            performCalculation(activeOldAssess, activeNewAssess, ['class']);
-                        }
-                    }, 300);
-                }
-                
-                if (cohortAssessments.length > 0) {
-                    showStatus(`✅ 成功撈取到 ${cohortAssessments.length} 次同屆相關評估紀錄。`, 'success');
-                } else {
-                    showStatus(`ℹ️ 目前資料庫中暫無此屆學生的成績，請先在上載區進行新增。`, 'secondary');
-                }
-            } catch (err) {
-                showStatus(`❌ 讀取資料庫失敗: ${err.message}`, 'danger');
-            }
-        }
+        if (checkedNew.length === 0) { alert("請至少選擇一個「新成績」基準！"); return; }
+        if (checkedOld.length === 0) { alert("請至少選擇一個「舊成績」進行對比！"); return; }
         
-        function renderAssessmentCheckboxes() {
-            const oldContainer = document.getElementById('oldScoreCheckboxes');
-            const newContainer = document.getElementById('newScoreRadioGroup');
-            oldContainer.innerHTML = ''; newContainer.innerHTML = '';
-            
-            if (cohortAssessments.length === 0) {
-                oldContainer.innerHTML = '<span class="text-muted small">無可用評估</span>';
-                newContainer.innerHTML = '<span class="text-muted small">無可用評估</span>';
-                return;
-            }
-            
-            cohortAssessments.sort((a,b) => a.code.localeCompare(b.code));
-            cohortAssessments.forEach((assess) => {
-                const divOld = document.createElement('div');
-                divOld.className = 'form-check form-check-inline';
-                divOld.innerHTML = `
-                    <input class="form-check-input" type="checkbox" name="globalOld" value="${assess.code}" id="old_${assess.code}">
-                    <label class="form-check-label" for="old_${assess.code}">${assess.code}</label>
-                `;
-                oldContainer.appendChild(divOld);
-                
-                const divNew = document.createElement('div');
-                divNew.className = 'form-check form-check-inline';
-                divNew.innerHTML = `
-                    <input class="form-check-input" type="radio" name="globalNew" value="${assess.code}" id="new_${assess.code}">
-                    <label class="form-check-label" for="new_${assess.code}">${assess.code}</label>
-                `;
-                newContainer.appendChild(divNew);
-            });
-        }
+        const selectedDims = Array.from(document.querySelectorAll('.group-dimension:checked')).map(el => el.value);
+        activeOldAssess = checkedOld;
+        activeNewAssess = checkedNew; // 雙向多選陣列儲存 [1]
+        performCalculation(activeOldAssess, activeNewAssess, selectedDims);
+    };
+    
+    function performCalculation(oldCodes, newCodes, selectedDims) {
+        showStatus("⏳ 正在進行雙向多選常模標準化與試卷品質診斷...", "warning");
+        const year = parseInt(document.getElementById('selectSchoolYear').value);
+        const grade = document.getElementById('selectGrade').value;
+        const registryDocId = `${year}_${grade}_Registry`;
         
-        window.enforceDimensionLimit = function(el) {
-            const checkedDims = document.querySelectorAll('.group-dimension:checked');
-            if (checkedDims.length > 2) {
-                alert("分析維度最多只能同時選擇 2 項！");
-                el.checked = false;
-            } else if (checkedDims.length === 0) {
-                alert("至少需保留 1 個分析維度！");
-                el.checked = true;
-            }
-        };
-        
-        // ==========================================
-        // 📥 數據解析與上傳管理 (已完全移除出生日期)
-        // ==========================================
-        function parseCSV(file, callback) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const text = e.target.result;
-                const encoding = text.includes('Reg') || text.includes('姓名') || text.includes('班別') ? "utf-8" : "big5";
-                Papa.parse(file, {
-                    header: false, skipEmptyLines: true, encoding: encoding,
-                    complete: (res) => callback(null, res.data),
-                    error: (err) => callback(err, null)
-                });
-            };
-            reader.readAsText(file.slice(0, 5000));
-        }
-        
-        function parseGender(val) {
-            if (!val) return '未知';
-            const s = String(val).trim().toUpperCase();
-            if (['M', '1', '男', 'MALE'].includes(s)) return '男';
-            if (['F', '2', '女', 'FEMALE'].includes(s)) return '女';
-            return s;
-        }
-        
-        window.handleRegistryFileSelected = function(fileEl) {
-            if (!fileEl.files || fileEl.files.length === 0) return;
-            parseCSV(fileEl.files[0], (err, rows) => {
-                if (err || !rows || rows.length === 0) { alert("讀取 CSV 失敗"); return; }
-                parsedTempRegistryRows = rows;
-                let headerIdx = rows.findIndex(r => r.some(c => String(c).includes('Reg') || String(c).includes('編號') || String(c).includes('學號')));
-                if (headerIdx === -1) headerIdx = 0;
-                const headers = rows[headerIdx].map(h => String(h || '').trim());
-                
-                const populateSelect = (selectId, matchKeywords) => {
-                    const el = document.getElementById(selectId);
-                    el.innerHTML = '<option value="">--請選擇--</option>';
-                    headers.forEach(h => {
-                        const opt = new Option(h, h);
-                        if (matchKeywords.some(k => h.includes(k))) opt.selected = true;
-                        el.add(opt);
-                    });
-                };
-                populateSelect('mapReg_id', ['*Reg. No.', '學生註冊編號', '註冊編號', '學號', '入學編號']);
-                populateSelect('mapReg_name', ['姓名', 'Name', '中文姓名']);
-                populateSelect('mapReg_class', ['班別', 'Class', '組']);
-                populateSelect('mapReg_gender', ['性別代碼', '性別', 'Gender', 'Sex']);
-                populateSelect('mapReg_classno', ['班號', 'Class No.', '座號', '學號']);
-                document.getElementById('registryMappingArea').style.display = 'block';
-            });
-        };
-        
-        window.commitRegistryUpload = async function() {
-            const year = document.getElementById('regYearInput').value.trim();
-            const grade = document.getElementById('regGradeInput').value;
-            const colId = document.getElementById('mapReg_id').value;
-            const colName = document.getElementById('mapReg_name').value;
-            const colClass = document.getElementById('mapReg_class').value;
-            const colGender = document.getElementById('mapReg_gender').value;
-            const colClassNo = document.getElementById('mapReg_classno').value;
+        window.getDoc(window.doc(window.db, "StudentRegistry_v2", registryDocId)).then((regSnap) => {
+            let currentRegistry = {};
+            if (regSnap.exists()) currentRegistry = regSnap.data().registry;
             
-            if (!colId || !colName || !colClass) { alert("入學編號、姓名、班別為必選欄位！"); return; }
+            // 提取並驗證所有選取的新/舊成績對象 [1]
+            const newAssessObjs = cohortAssessments.filter(a => newCodes.includes(a.code));
+            const oldAssessObjs = cohortAssessments.filter(a => oldCodes.includes(a.code));
             
-            showStatus("⏳ 正在建立並寫入官方年度名冊至雲端...", "warning");
-            const headers = parsedTempRegistryRows[0].map(h => String(h || '').trim());
-            const dataRows = parsedTempRegistryRows.slice(1);
-            const registryMap = {};
+            if (newAssessObjs.length === 0) { showStatus("❌ 找不到選取的新成績資料", "danger"); return; }
             
-            // 安全索引保護
-            const idIdx = headers.indexOf(colId);
-            const nameIdx = headers.indexOf(colName);
-            const classIdx = headers.indexOf(colClass);
-            const genderIdx = colGender ? headers.indexOf(colGender) : -1;
-            const classNoIdx = colClassNo ? headers.indexOf(colClassNo) : -1;
+            // 以選取的「第一個新成績」為核心學籍底冊名單 (排除離校生)
+            const baseStudents = newAssessObjs[0].students;
+            const baseRegs = new Set(baseStudents.map(s => s.regNo));
             
-            dataRows.forEach(row => {
-                const regNo = (idIdx !== -1 && row[idIdx]) ? String(row[idIdx]).trim().replace(/#/g, '') : '';
-                if (!regNo) return;
-                const name = (nameIdx !== -1 && row[nameIdx]) ? String(row[nameIdx]).trim() : '未登錄';
-                const cls = (classIdx !== -1 && row[classIdx]) ? String(row[classIdx]).trim() : '未分班';
-                const genderRaw = (genderIdx !== -1 && row[genderIdx]) ? row[genderIdx] : '';
-                const classNoRaw = (classNoIdx !== -1 && row[classNoIdx]) ? row[classNoIdx] : '';
-                const classNoInt = parseInt(String(classNoRaw).trim(), 10);
-                
-                registryMap[regNo] = {
-                    name, class: cls, gender: parseGender(genderRaw), classNo: isNaN(classNoInt) ? 99 : classNoInt
-                };
-            });
-            
-            try {
-                const registryDocId = `${year}_${grade}_Registry`;
-                await window.setDoc(window.doc(window.db, "StudentRegistry_v2", registryDocId), {
-                    year: parseInt(year), grade: grade, lastUpdated: new Date().toISOString(), registry: registryMap
-                });
-                showStatus(`✅ 官方年度名冊建置成功！(共 ${Object.keys(registryMap).length} 位學生)`, "success");
-                alert(`官方名冊儲存成功！\n人數: ${Object.keys(registryMap).length}`);
-            } catch (err) {
-                showStatus(`❌ 儲存名冊失敗: ${err.message}`, "danger");
-            }
-        };
-        
-        window.handleScoreFileSelected = function(fileEl) {
-            if (!fileEl.files || fileEl.files.length === 0) return;
-            parseCSV(fileEl.files[0], (err, rows) => {
-                if (err || !rows || rows.length === 0) { alert("讀取成績 CSV 失敗"); return; }
-                parsedTempScoreRows = rows;
-                let headerIdx = rows.findIndex(r => r.some(c => String(c).includes('Reg') || String(c).includes('編號') || String(c).includes('學號')));
-                if (headerIdx === -1) headerIdx = 0;
-                const headers = rows[headerIdx].map(h => String(h || '').trim());
-                
-                const populateSelect = (selectId, matchKeywords) => {
-                    const el = document.getElementById(selectId);
-                    el.innerHTML = '<option value="">--不採計--</option>';
-                    headers.forEach(h => {
-                        const opt = new Option(h, h);
-                        if (matchKeywords.some(k => h.includes(k))) opt.selected = true;
-                        el.add(opt);
-                    });
-                };
-                populateSelect('mapScore_id', ['*Reg. No.', '學生註冊編號', '學號', '入學編號']);
-                populateSelect('mapScore_math', ['數學', 'math']);
-                populateSelect('mapScore_chiread', ['中讀', '中文閱讀', '閱讀']);
-                populateSelect('mapScore_chidict', ['中默', '中文默書', '默書']);
-                populateSelect('mapScore_engread', ['英讀', '英文閱讀', 'reading']);
-                populateSelect('mapScore_engdict', ['英默', '英文默書', 'dictation']);
-                document.getElementById('scoreMappingArea').style.display = 'block';
-            });
-        };
-        
-        window.commitScoreUpload = async function() {
-            const code = document.getElementById('inputAssessCode').value.trim();
-            const match = code.match(/^(\d+)(P\d)(.+)$/i);
-            if (!match) { alert("評估代號格式錯誤，必須如 '26P3T1'"); return; }
-            
-            const year = parseInt(match[1]);
-            const grade = match[2].toUpperCase();
-            const term = match[3].toUpperCase();
-            const colId = document.getElementById('mapScore_id').value;
-            if (!colId) { alert("必須選擇學號對應欄位！"); return; }
-            
-            showStatus("⏳ 正在建立學期成績數據，並與官方名冊對齊聯動...", "warning");
-            
-            let registryMap = {};
-            try {
-                const regSnap = await window.getDoc(window.doc(window.db, "StudentRegistry_v2", `${year}_${grade}_Registry`));
-                if (regSnap.exists()) registryMap = regSnap.data().registry;
-            } catch(e) { console.warn("未發現官方名冊，使用純成績表資料。"); }
-            
-            const headers = parsedTempScoreRows[0].map(h => String(h || '').trim());
-            const dataRows = parsedTempScoreRows.slice(1);
-            const getVal = (row, selectId) => {
-                const col = document.getElementById(selectId).value;
-                if (!col) return null;
-                const idx = headers.indexOf(col);
-                if (idx === -1) return null;
-                const num = parseFloat(row[idx]);
-                return isNaN(num) ? null : num;
-            };
-            
-            const idIdx = headers.indexOf(colId);
-            const studentsList = [];
-            dataRows.forEach(row => {
-                const regNo = (idIdx !== -1 && row[idIdx]) ? String(row[idIdx]).trim().replace(/#/g, '') : '';
-                if (!regNo) return;
-                const regInfo = registryMap[regNo] || {};
-                
-                studentsList.push({
-                    regNo: regNo,
-                    name: regInfo.name || '未登錄',
-                    class: regInfo.class || '未分班',
-                    gender: regInfo.gender || '未知',
-                    classNo: regInfo.classNo || 99,
-                    chi_read: getVal(row, 'mapScore_chiread'),
-                    chi_dict: getVal(row, 'mapScore_chidict'),
-                    eng_read: getVal(row, 'mapScore_engread'),
-                    eng_dict: getVal(row, 'mapScore_engdict'),
-                    math: getVal(row, 'mapScore_math')
-                });
-            });
-            
-            try {
-                await window.setDoc(window.doc(window.db, "CrossYearScores_v2", code), {
-                    code, year, grade, term, lastUpdated: new Date().toISOString(), students: studentsList
-                });
-                showStatus(`✅ 評估 ${code} 成功儲存與對齊！`, "success");
-                alert(`成績單儲存成功！共關聯 ${studentsList.length} 位學童。`);
-                onCohortChanged();
-            } catch (err) {
-                showStatus(`❌ 儲存成績單失敗: ${err.message}`, "danger");
-            }
-        };
-        
-        // ==========================================
-        // 📊 多維交叉分析與 Z-Score 核心計算引擎
-        // ==========================================
-        window.triggerMainAnalysis = function() {
-            const checkedOld = Array.from(document.querySelectorAll('input[name="globalOld"]:checked')).map(el => el.value);
-            const selectedNew = document.querySelector('input[name="globalNew"]:checked')?.value;
-            if (!selectedNew) { alert("請選擇「新成績」基準！"); return; }
-            if (checkedOld.length === 0) { alert("請選擇「舊成績」進行對比！"); return; }
-            
-            const selectedDims = Array.from(document.querySelectorAll('.group-dimension:checked')).map(el => el.value);
-            activeOldAssess = checkedOld;
-            activeNewAssess = selectedNew;
-            performCalculation(activeOldAssess, activeNewAssess, selectedDims);
-        };
-        
-        function performCalculation(oldCodes, newCode, selectedDims) {
-            showStatus("⏳ 正在以新名單為母體標準進行 Z-Score 標準化與試卷品質診斷...", "warning");
-            
-            const year = parseInt(document.getElementById('selectSchoolYear').value);
-            const grade = document.getElementById('selectGrade').value;
-            const registryDocId = `${year}_${grade}_Registry`;
-            
-            window.getDoc(window.doc(window.db, "StudentRegistry_v2", registryDocId)).then((regSnap) => {
-                let currentRegistry = {};
-                if (regSnap.exists()) {
-                    currentRegistry = regSnap.data().registry;
-                }
-                
-                const newAssessObj = cohortAssessments.find(a => a.code === newCode);
-                const oldAssessObjs = cohortAssessments.filter(a => oldCodes.includes(a.code));
-                if (!newAssessObj) { showStatus("❌ 找不到新成績資料", "danger"); return; }
-                
-                const baseStudents = newAssessObj.students;
-                const baseRegs = new Set(baseStudents.map(s => s.regNo));
-                
-                const statsMap = {};
-                const allInvolved = [newAssessObj, ...oldAssessObjs];
-                allInvolved.forEach(assess => {
-                    statsMap[assess.code] = {};
-                    const cohortStudents = assess.students.filter(s => baseRegs.has(s.regNo));
-                    ['chi_read', 'chi_dict', 'eng_read', 'eng_dict', 'math'].forEach(subj => {
-                        const scores = cohortStudents.map(s => s[subj]).filter(v => v !== null && !isNaN(v));
-                        if (scores.length > 0) {
-                            statsMap[assess.code][subj] = { mean: ss.mean(scores), std: ss.standardDeviation(scores) || 1 };
-                        } else {
-                            statsMap[assess.code][subj] = { mean: 0, std: 1 };
-                        }
-                    });
-                });
-                
-                const getGroupKey = (s) => {
-                    const parts = [];
-                    selectedDims.forEach(dim => {
-                        if (dim === 'class') parts.push(s.class || '未分班');
-                        if (dim === 'gender') parts.push(s.gender || '未知');
-                    });
-                    return parts.join('-');
-                };
-                
-                const analyzedStudents = {};
-                baseStudents.forEach(bs => {
-                    const officialInfo = currentRegistry[bs.regNo] || {};
-                    const finalClass = officialInfo.class || bs.class || '未分班';
-                    const finalName = officialInfo.name || bs.name || '未登錄';
-                    const finalGender = officialInfo.gender || bs.gender || '未知';
-                    const finalClassNo = officialInfo.classNo || bs.classNo || 99;
-                    
-                    const tempStudent = {
-                        regNo: bs.regNo, name: finalName, class: finalClass, gender: finalGender,
-                        classNo: finalClassNo
-                    };
-                    tempStudent.groupKey = getGroupKey(tempStudent);
-                    
-                    analyzedStudents[bs.regNo] = {
-                        ...tempStudent,
-                        newScores: { raw: {}, z: {} }, oldScores: { raw: {}, z: {} }, details: {}
-                    };
-                });
-                
+            // 建立所有相關評估點的統計字典 (Mean, SD)
+            const statsMap = {};
+            const allInvolved = [...newAssessObjs, ...oldAssessObjs];
+            allInvolved.forEach(assess => {
+                statsMap[assess.code] = {};
+                const cohortStudents = assess.students.filter(s => baseRegs.has(s.regNo));
                 ['chi_read', 'chi_dict', 'eng_read', 'eng_dict', 'math'].forEach(subj => {
-                    baseStudents.forEach(bs => {
-                        const stu = analyzedStudents[bs.regNo];
-                        const newScoreVal = bs[subj];
-                        if (newScoreVal !== null && !isNaN(newScoreVal)) {
-                            stu.newScores.raw[subj] = newScoreVal;
-                            const stats = statsMap[newCode][subj];
-                            stu.newScores.z[subj] = (newScoreVal - stats.mean) / stats.std;
-                        } else {
-                            stu.newScores.raw[subj] = null; stu.newScores.z[subj] = null;
-                        }
-                        
-                        const oldRawList = []; const oldZList = [];
-                        oldAssessObjs.forEach(oldAssess => {
-                            const oldRec = oldAssess.students.find(s => s.regNo === bs.regNo);
-                            if (oldRec && oldRec[subj] !== null && !isNaN(oldRec[subj])) {
-                                const oldVal = oldRec[subj];
-                                oldRawList.push(oldVal);
-                                const stats = statsMap[oldAssess.code][subj];
-                                const z = (oldVal - stats.mean) / stats.std;
-                                oldZList.push(z);
-                                if (!stu.details[oldAssess.code]) stu.details[oldAssess.code] = { raw: {}, z: {} };
-                                stu.details[oldAssess.code].raw[subj] = oldVal;
-                                stu.details[oldAssess.code].z[subj] = z;
-                            }
-                        });
-                        
-                        if (!stu.details[newCode]) stu.details[newCode] = { raw: {}, z: {} };
-                        if (newScoreVal !== null && !isNaN(newScoreVal)) {
-                            stu.details[newCode].raw[subj] = newScoreVal;
-                            stu.details[newCode].z[subj] = stu.newScores.z[subj];
-                        }
-                        stu.oldScores.raw[subj] = oldRawList.length > 0 ? ss.mean(oldRawList) : null;
-                        stu.oldScores.z[subj] = oldZList.length > 0 ? ss.mean(oldZList) : null;
-                    });
+                    const scores = cohortStudents.map(s => s[subj]).filter(v => v !== null && !isNaN(v));
+                    statsMap[assess.code][subj] = {
+                        mean: scores.length > 0 ? ss.mean(scores) : 0,
+                        std: scores.length > 0 ? (ss.standardDeviation(scores) || 1) : 1
+                    };
                 });
+            });
+            
+            const getGroupKey = (s) => {
+                const parts = [];
+                selectedDims.forEach(dim => {
+                    if (dim === 'class') parts.push(s.class || '未分班');
+                    if (dim === 'gender') parts.push(s.gender || '未知');
+                });
+                return parts.join('-');
+            };
+            
+            const analyzedStudents = {};
+            baseStudents.forEach(bs => {
+                const officialInfo = currentRegistry[bs.regNo] || {};
+                const finalClass = officialInfo.class || bs.class || '未分班';
+                const finalName = officialInfo.name || bs.name || '未登錄';
+                const finalGender = officialInfo.gender || bs.gender || '未知';
+                const finalClassNo = officialInfo.classNo || bs.classNo || 99;
                 
-                const uniqueGroups = [...new Set(Object.values(analyzedStudents).map(s => s.groupKey))].sort();
-                currentAnalysisResult = {
-                    students: Object.values(analyzedStudents),
-                    groupList: uniqueGroups,
-                    statsMap: statsMap,
-                    oldCodes: oldCodes,
-                    newCode: newCode
+                analyzedStudents[bs.regNo] = {
+                    regNo: bs.regNo, name: finalName, class: finalClass, gender: finalGender, classNo: finalClassNo,
+                    groupKey: getGroupKey({ class: finalClass, gender: finalGender }),
+                    newScores: { raw: {}, z: {} }, oldScores: { raw: {}, z: {} }, details: {}
                 };
-                
-                document.getElementById('analysisSection').style.display = 'block';
-                const groupSel = document.getElementById('groupDetailSelector');
-                groupSel.innerHTML = '';
-                uniqueGroups.forEach(g => groupSel.add(new Option(g, g)));
-                
-                const quadClassSel = document.getElementById('quadrantClassSelector');
-                quadClassSel.innerHTML = '<option value="all">--顯示全級學童--</option>';
-                const distinctClasses = [...new Set(Object.values(analyzedStudents).map(s => s.class))].sort();
-                distinctClasses.forEach(c => quadClassSel.add(new Option(c, c)));
-                
-                buildIndependentFilters();
-                redrawAllCharts();
-                showStatus("✅ 多維交叉分析與試卷信度品質診斷完成！", "success");
-            }).catch(err => {
-                showStatus(`❌ 讀取官方年度名冊發生錯誤: ${err.message}`, 'danger');
             });
-        }
-        
-        function buildIndependentFilters() {
-            const panels = ['filter-chartImproveRegress', 'filter-chartTwoPointTrend', 'filter-chartClassRawLine', 'filter-chartQuadrant', 'filter-dumbbellChart'];
-            panels.forEach(pId => {
-                const panel = document.getElementById(pId);
-                if (!panel) return;
-                panel.innerHTML = '<span class="fw-bold me-3">🔧 本圖表獨立微調:</span>';
-                currentAnalysisResult.oldCodes.forEach(code => {
-                    const span = document.createElement('span');
-                    span.className = 'form-check form-check-inline m-0 me-3';
-                    span.innerHTML = `
-                        <input class="form-check-input micro-tick" type="checkbox" data-chart="${pId}" value="${code}" checked id="${pId}_${code}" onchange="onMicroFilterChanged('${pId}')">
-                        <label class="form-check-label text-danger" for="${pId}_${code}">${code}</label>
-                    `;
-                    panel.appendChild(span);
+            
+            // 核心 Z-Score 計算 (多選新/舊成績採 Z-Score 智慧加總平均法) [1]
+            ['chi_read', 'chi_dict', 'eng_read', 'eng_dict', 'math'].forEach(subj => {
+                Object.keys(analyzedStudents).forEach(regNo => {
+                    const stu = analyzedStudents[regNo];
+                    
+                    // A. 新成績多點計算與平均 [1]
+                    const newRawList = []; const newZList = [];
+                    newAssessObjs.forEach(newAssess => {
+                        const rec = newAssess.students.find(s => s.regNo === regNo);
+                        if (rec && rec[subj] !== null && !isNaN(rec[subj])) {
+                            const val = rec[subj];
+                            newRawList.push(val);
+                            const stats = statsMap[newAssess.code][subj];
+                            const z = (val - stats.mean) / stats.std;
+                            newZList.push(z);
+                            
+                            if (!stu.details[newAssess.code]) stu.details[newAssess.code] = { raw: {}, z: {} };
+                            stu.details[newAssess.code].raw[subj] = val;
+                            stu.details[newAssess.code].z[subj] = z;
+                        }
+                    });
+                    stu.newScores.raw[subj] = newRawList.length > 0 ? ss.mean(newRawList) : null;
+                    stu.newScores.z[subj] = newZList.length > 0 ? ss.mean(newZList) : null;
+                    
+                    // B. 舊成績多點計算與平均
+                    const oldRawList = []; const oldZList = [];
+                    oldAssessObjs.forEach(oldAssess => {
+                        const rec = oldAssess.students.find(s => s.regNo === regNo);
+                        if (rec && rec[subj] !== null && !isNaN(rec[subj])) {
+                            const val = rec[subj];
+                            oldRawList.push(val);
+                            const stats = statsMap[oldAssess.code][subj];
+                            const z = (val - stats.mean) / stats.std;
+                            oldZList.push(z);
+                            
+                            if (!stu.details[oldAssess.code]) stu.details[oldAssess.code] = { raw: {}, z: {} };
+                            stu.details[oldAssess.code].raw[subj] = val;
+                            stu.details[oldAssess.code].z[subj] = z;
+                        }
+                    });
+                    stu.oldScores.raw[subj] = oldRawList.length > 0 ? ss.mean(oldRawList) : null;
+                    stu.oldScores.z[subj] = oldZList.length > 0 ? ss.mean(oldZList) : null;
                 });
-                const spanNew = document.createElement('span');
-                spanNew.className = 'form-check form-check-inline m-0';
-                spanNew.innerHTML = `
-                    <input class="form-check-input" type="checkbox" checked disabled>
-                    <label class="form-check-label text-success">${currentAnalysisResult.newCode} (新)</label>
+            });
+            
+            const uniqueGroups = [...new Set(Object.values(analyzedStudents).map(s => s.groupKey))].sort();
+            currentAnalysisResult = {
+                students: Object.values(analyzedStudents),
+                groupList: uniqueGroups,
+                statsMap: statsMap,
+                oldCodes: oldCodes,
+                newCodes: newCodes // 升級為多選陣列儲存 [1]
+            };
+            
+            // 介面選擇控制連動
+            document.getElementById('analysisSection').style.display = 'block';
+            const groupSel = document.getElementById('groupDetailSelector');
+            groupSel.innerHTML = '';
+            uniqueGroups.forEach(g => groupSel.add(new Option(g, g)));
+            
+            const quadClassSel = document.getElementById('quadrantClassSelector');
+            quadClassSel.innerHTML = '<option value="all">--顯示全級學童--</option>';
+            const distinctClasses = [...new Set(Object.values(analyzedStudents).map(s => s.class))].sort();
+            distinctClasses.forEach(c => quadClassSel.add(new Option(c, c)));
+            
+            buildIndependentFilters();
+            redrawAllCharts();
+            showStatus("✅ 雙向多選分析與信度診斷成功！", "success");
+        }).catch(err => {
+            showStatus(`❌ 讀取官方年度名冊發生錯誤: ${err.message}`, 'danger');
+        });
+    }
+    
+    function buildIndependentFilters() {
+        const panels = ['filter-chartImproveRegress', 'filter-chartTwoPointTrend', 'filter-chartClassRawLine', 'filter-chartQuadrant', 'filter-dumbbellChart'];
+        panels.forEach(pId => {
+            const panel = document.getElementById(pId);
+            if (!panel) return;
+            panel.innerHTML = '<span class="fw-bold me-3">🔧 本圖表獨立微調 (舊評估):</span>';
+            currentAnalysisResult.oldCodes.forEach(code => {
+                const span = document.createElement('span');
+                span.className = 'form-check form-check-inline m-0 me-3';
+                span.innerHTML = `
+                    <input class="form-check-input micro-tick" type="checkbox" data-chart="${pId}" value="${code}" checked id="${pId}_${code}" onchange="onMicroFilterChanged('${pId}')">
+                    <label class="form-check-label text-danger" for="${pId}_${code}">${code}</label>
                 `;
-                panel.appendChild(spanNew);
-            });
-        }
-        
-        function onMicroFilterChanged(panelId) {
-            const subj = document.getElementById('subjectSelector').value;
-            const checkedTicks = Array.from(document.querySelectorAll(`#${panelId} .micro-tick:checked`)).map(el => el.value);
-            const baseNew = currentAnalysisResult.newCode;
-            
-            if (panelId === 'filter-chartImproveRegress') renderImproveRegressChart(subj, checkedTicks, baseNew);
-            else if (panelId === 'filter-chartTwoPointTrend') renderTwoPointTrendChart(subj, checkedTicks, baseNew);
-            else if (panelId === 'filter-chartClassRawLine') renderClassRawTrendLine(subj, checkedTicks, baseNew);
-            else if (panelId === 'filter-chartQuadrant') renderQuadrantChart(subj, checkedTicks, baseNew, document.getElementById('quadrantClassSelector').value, document.getElementById('quadrantTrendMode').checked);
-            else if (panelId === 'filter-dumbbellChart') renderDetailDumbbellChart();
-        }
-        
-        function runEbelTestDiagnostics(subj, newCode) {
-            const students = currentAnalysisResult.students;
-            const scores = students.map(s => s.newScores.raw[subj]).filter(v => v !== null && !isNaN(v));
-            if (scores.length === 0) return;
-            
-            const sd = ss.standardDeviation(scores);
-            document.getElementById('stat_sd').innerText = sd.toFixed(1);
-            const sdLabel = document.getElementById('stat_sd_label');
-            if (sd < 8) { sdLabel.innerText = "分數過度集中"; sdLabel.className = "badge bg-warning"; }
-            else if (sd > 18) { sdLabel.innerText = "兩極分化嚴重"; sdLabel.className = "badge bg-danger"; }
-            else { sdLabel.innerText = "常態理想分佈"; sdLabel.className = "badge bg-success"; }
-            
-            scores.sort((a,b) => b - a);
-            const size27 = Math.max(1, Math.floor(scores.length * 0.27));
-            const highGroup = scores.slice(0, size27);
-            const lowGroup = scores.slice(-size27);
-            const meanHigh = ss.mean(highGroup);
-            const meanLow = ss.mean(lowGroup);
-            const discrimination = (meanHigh - meanLow) / 100;
-            
-            document.getElementById('stat_discrimination').innerText = discrimination.toFixed(2);
-            const discLabel = document.getElementById('stat_disc_label');
-            if (discrimination >= 0.40) { discLabel.innerText = "🌟 優異鑑別度"; discLabel.className = "badge bg-success"; }
-            else if (discrimination >= 0.30) { discLabel.innerText = "良好鑑別度"; discLabel.className = "badge bg-info"; }
-            else if (discrimination >= 0.20) { discLabel.innerText = "鑑別度一般"; discLabel.className = "badge bg-warning"; }
-            else { discLabel.innerText = "❌ 缺乏鑑別度"; discLabel.className = "badge bg-danger"; }
-            
-            document.getElementById('stat_minmax').innerHTML = `最高: <span class="text-success">${ss.max(scores)}分</span><br>最低: <span class="text-danger">${ss.min(scores)}分</span>`;
-        }
-        
-        function redrawAllCharts() {
-            const subj = document.getElementById('subjectSelector').value;
-            const oldCodes = currentAnalysisResult.oldCodes;
-            const newCode = currentAnalysisResult.newCode;
-            
-            calculateGradeAvgDiff(subj, oldCodes, newCode);
-            runEbelTestDiagnostics(subj, newCode);
-            
-            renderImproveRegressChart(subj, oldCodes, newCode);
-            renderTwoPointTrendChart(subj, oldCodes, newCode);
-            renderDistributionChart(subj, newCode);
-            renderClassRawTrendLine(subj, oldCodes, newCode);
-            renderQuadrantWithFilter();
-            renderDetailDumbbellChart();
-            renderMultiSubjectAttentionTable();
-            renderTop20ProgressRegression(subj, oldCodes, newCode);
-            renderRankingBellCurve(null);
-        }
-        
-        function calculateGradeAvgDiff(subj, oldCodes, newCode) {
-            const students = currentAnalysisResult.students;
-            const newRaws = students.map(s => s.newScores.raw[subj]).filter(v => v !== null && !isNaN(v));
-            const oldRaws = [];
-            students.forEach(s => {
-                const valList = oldCodes.map(c => s.details[c]?.raw[subj]).filter(v => v !== undefined && v !== null);
-                if (valList.length > 0) oldRaws.push(ss.mean(valList));
+                panel.appendChild(span);
             });
             
-            if (newRaws.length > 0 && oldRaws.length > 0) {
-                const diff = ss.mean(newRaws) - ss.mean(oldRaws);
-                const badge = document.getElementById('gradeAvgDiffBadge');
-                badge.innerText = `${diff >= 0 ? '+' : ''}${diff.toFixed(1)}分`;
-                badge.style.backgroundColor = diff >= 0 ? '#198754' : '#e53e3e';
-            }
-        }
+            const spanNew = document.createElement('span');
+            spanNew.className = 'form-check form-check-inline m-0';
+            spanNew.innerHTML = `
+                <input class="form-check-input" type="checkbox" checked disabled>
+                <label class="form-check-label text-success">已選新成績 (${currentAnalysisResult.newCodes.length} 次評估)</label>
+            `;
+            panel.appendChild(spanNew);
+        });
+    }
+    
+    function onMicroFilterChanged(panelId) {
+        const subj = document.getElementById('subjectSelector').value;
+        const checkedTicks = Array.from(document.querySelectorAll(`#${panelId} .micro-tick:checked`)).map(el => el.value);
+        const baseNewList = currentAnalysisResult.newCodes;
         
-        // ==========================================
-        // 📈 圖表渲染：進退步、走勢、隊形與關注名單
-        // ==========================================
-        function renderImproveRegressChart(subj, oldCodes, newCode) {
-            const students = currentAnalysisResult.students;
-            const groups = currentAnalysisResult.groupList;
-            const datasets = [
-                { label: '🚀 顯著進步 (ΔZ > +0.2)', data: [], backgroundColor: '#198754' },
-                { label: '⚖️ 持平穩定 (±0.2Z 內)', data: [], backgroundColor: '#a0aec0' },
-                { label: '📉 顯著退步 (ΔZ < -0.2)', data: [], backgroundColor: '#dc3545' }
-            ];
-            
-            groups.forEach(g => {
-                let improve = 0, flat = 0, regress = 0;
-                students.filter(s => s.groupKey === g).forEach(s => {
-                    const newZ = s.newScores.z[subj];
-                    const oldZList = oldCodes.map(code => s.details[code]?.z[subj]).filter(v => v !== undefined && v !== null);
-                    const oldZAvg = oldZList.length > 0 ? ss.mean(oldZList) : null;
-                    if (newZ !== null && oldZAvg !== null) {
-                        const diff = newZ - oldZAvg;
-                        if (diff > 0.2) improve++;
-                        else if (diff < -0.2) regress++;
-                        else flat++;
-                    }
-                });
-                datasets[0].data.push(improve); datasets[1].data.push(flat); datasets[2].data.push(regress);
+        if (panelId === 'filter-chartImproveRegress') renderImproveRegressChart(subj, checkedTicks, baseNewList);
+        else if (panelId === 'filter-chartTwoPointTrend') renderTwoPointTrendChart(subj, checkedTicks, baseNewList);
+        else if (panelId === 'filter-chartClassRawLine') renderClassRawTrendLine(subj, checkedTicks, baseNewList);
+        else if (panelId === 'filter-chartQuadrant') renderQuadrantChart(subj, checkedTicks, baseNewList, document.getElementById('quadrantClassSelector').value);
+        else if (panelId === 'filter-dumbbellChart') renderDetailDumbbellChart();
+    }
+    
+    function runEbelTestDiagnostics(subj, newCodes) {
+        const students = currentAnalysisResult.students;
+        // 使用多選新成績平均原始分作為品質診斷母體 [1]
+        const scores = students.map(s => s.newScores.raw[subj]).filter(v => v !== null && !isNaN(v));
+        if (scores.length === 0) return;
+        
+        const sd = ss.standardDeviation(scores);
+        document.getElementById('stat_sd').innerText = sd.toFixed(1);
+        const sdLabel = document.getElementById('stat_sd_label');
+        if (sd < 8) { sdLabel.innerText = "分數過度集中"; sdLabel.className = "badge bg-warning"; }
+        else if (sd > 18) { sdLabel.innerText = "兩極分化嚴重"; sdLabel.className = "badge bg-danger"; }
+        else { sdLabel.innerText = "常態理想分佈"; sdLabel.className = "badge bg-success"; }
+        
+        scores.sort((a,b) => b - a);
+        const size27 = Math.max(1, Math.floor(scores.length * 0.27));
+        const highGroup = scores.slice(0, size27);
+        const lowGroup = scores.slice(-size27);
+        const meanHigh = ss.mean(highGroup);
+        const meanLow = ss.mean(lowGroup);
+        const discrimination = (meanHigh - meanLow) / 100;
+        
+        document.getElementById('stat_discrimination').innerText = discrimination.toFixed(2);
+        const discLabel = document.getElementById('stat_disc_label');
+        if (discrimination >= 0.40) { discLabel.innerText = "🌟 優異鑑別度"; discLabel.className = "badge bg-success"; }
+        else if (discrimination >= 0.30) { discLabel.innerText = "良好鑑別度"; discLabel.className = "badge bg-info"; }
+        else if (discrimination >= 0.20) { discLabel.innerText = "鑑別度一般"; discLabel.className = "badge bg-warning"; }
+        else { discLabel.innerText = "❌ 缺乏鑑別度"; discLabel.className = "badge bg-danger"; }
+        
+        document.getElementById('stat_minmax').innerHTML = `最高: <span class="text-success">${ss.max(scores).toFixed(0)}分</span><br>最低: <span class="text-danger">${ss.min(scores).toFixed(0)}分</span>`;
+    }
+    
+    function redrawAllCharts() {
+        const subj = document.getElementById('subjectSelector').value;
+        const oldCodes = currentAnalysisResult.oldCodes;
+        const newCodes = currentAnalysisResult.newCodes;
+        
+        calculateGradeAvgDiff(subj, oldCodes, newCodes);
+        runEbelTestDiagnostics(subj, newCodes);
+        
+        renderImproveRegressChart(subj, oldCodes, newCodes);
+        renderTwoPointTrendChart(subj, oldCodes, newCodes);
+        renderDistributionChart(subj, newCodes[0]); // 基於最新考次
+        renderClassRawTrendLine(subj, oldCodes, newCodes);
+        renderQuadrantWithFilter();
+        renderDetailDumbbellChart();
+        renderMultiSubjectAttentionTable();
+        renderTop20ProgressRegression(subj, oldCodes, newCodes);
+        renderRankingBellCurve(null);
+    }
+    
+    function calculateGradeAvgDiff(subj, oldCodes, newCodes) {
+        const students = currentAnalysisResult.students;
+        const newRaws = students.map(s => s.newScores.raw[subj]).filter(v => v !== null && !isNaN(v));
+        const oldRaws = [];
+        students.forEach(s => {
+            const valList = oldCodes.map(c => s.details[c]?.raw[subj]).filter(v => v !== undefined && v !== null);
+            if (valList.length > 0) oldRaws.push(ss.mean(valList));
+        });
+        
+        if (newRaws.length > 0 && oldRaws.length > 0) {
+            const diff = ss.mean(newRaws) - ss.mean(oldRaws);
+            const badge = document.getElementById('gradeAvgDiffBadge');
+            badge.innerText = `${diff >= 0 ? '+' : ''}${diff.toFixed(1)}分`;
+            badge.style.backgroundColor = diff >= 0 ? '#198754' : '#e53e3e';
+        }
+    }
+    
+    // ==========================================
+    // 📈 圖表渲染：進退步與兩點平均分走勢
+    // ==========================================
+    function renderImproveRegressChart(subj, oldCodes, newCodes) {
+        const students = currentAnalysisResult.students;
+        const groups = currentAnalysisResult.groupList;
+        const datasets = [
+            { label: '🚀 顯著進步 (ΔZ > +0.2)', data: [], backgroundColor: '#198754' },
+            { label: '⚖️ 持平穩定 (±0.2Z 內)', data: [], backgroundColor: '#a0aec0' },
+            { label: '📉 顯著退步 (ΔZ < -0.2)', data: [], backgroundColor: '#dc3545' }
+        ];
+        
+        groups.forEach(g => {
+            let improve = 0, flat = 0, regress = 0;
+            students.filter(s => s.groupKey === g).forEach(s => {
+                const newZList = newCodes.map(code => s.details[code]?.z[subj]).filter(v => v !== undefined && v !== null);
+                const newZAvg = newZList.length > 0 ? ss.mean(newZList) : null;
+                const oldZList = oldCodes.map(code => s.details[code]?.z[subj]).filter(v => v !== undefined && v !== null);
+                const oldZAvg = oldZList.length > 0 ? ss.mean(oldZList) : null;
+                
+                if (newZAvg !== null && oldZAvg !== null) {
+                    const diff = newZAvg - oldZAvg;
+                    if (diff > 0.2) improve++;
+                    else if (diff < -0.2) regress++;
+                    else flat++;
+                }
             });
-            
-            if (chartInstances['chartImproveRegress']) chartInstances['chartImproveRegress'].destroy();
-            chartInstances['chartImproveRegress'] = new Chart(document.getElementById('chartImproveRegress').getContext('2d'), {
-                type: 'bar',
-                data: { labels: groups, datasets },
-                options: {
-                    responsive: true,
-                    scales: { x: { stacked: false }, y: { beginAtZero: true } },
-                    plugins: {
-                        legend: {
-                            labels: {
-                                boxWidth: 16, boxHeight: 12,
-                                generateLabels: (chart) => chart.data.datasets.map((ds, i) => ({
-                                    text: ds.label, fillStyle: ds.backgroundColor, strokeStyle: ds.backgroundColor, lineWidth: 0, hidden: !chart.isDatasetVisible(i), datasetIndex: i
-                                }))
-                            }
+            datasets[0].data.push(improve); datasets[1].data.push(flat); datasets[2].data.push(regress);
+        });
+        
+        if (chartInstances['chartImproveRegress']) chartInstances['chartImproveRegress'].destroy();
+        chartInstances['chartImproveRegress'] = new Chart(document.getElementById('chartImproveRegress').getContext('2d'), {
+            type: 'bar',
+            data: { labels: groups, datasets },
+            options: {
+                responsive: true,
+                scales: { x: { stacked: false }, y: { beginAtZero: true } },
+                plugins: {
+                    legend: {
+                        labels: {
+                            boxWidth: 16, boxHeight: 12,
+                            generateLabels: (chart) => chart.data.datasets.map((ds, i) => ({
+                                text: ds.label, fillStyle: ds.backgroundColor, strokeStyle: ds.backgroundColor, lineWidth: 0, hidden: !chart.isDatasetVisible(i), datasetIndex: i
+                            }))
                         }
                     }
                 }
-            });
-        }
+            }
+        });
+    }
+    
+    function renderTwoPointTrendChart(subj, oldCodes, newCodes) {
+        const students = currentAnalysisResult.students;
+        const groups = currentAnalysisResult.groupList;
+        const labels = ['舊成績 (平均)', '新成績 (平均)'];
+        const datasets = [];
+        const colors = ['#3182ce', '#dd6b20', '#319795', '#805ad5', '#e53e3e', '#d69e2e', '#4a5568'];
         
-        function renderTwoPointTrendChart(subj, oldCodes, newCode) {
-            const students = currentAnalysisResult.students;
-            const groups = currentAnalysisResult.groupList;
-            const labels = ['舊成績 (平均)', '新成績'];
-            const datasets = [];
-            const colors = ['#3182ce', '#dd6b20', '#319795', '#805ad5', '#e53e3e', '#d69e2e', '#4a5568'];
-            
-            groups.forEach((g, idx) => {
-                const groupStudents = students.filter(s => s.groupKey === g);
-                const oldVals = [];
-                groupStudents.forEach(s => {
-                    const list = oldCodes.map(c => s.details[c]?.raw[subj]).filter(v => v !== undefined && v !== null);
-                    if (list.length > 0) oldVals.push(ss.mean(list));
-                });
-                const oldMean = oldVals.length > 0 ? ss.mean(oldVals) : null;
-                
-                const newVals = groupStudents.map(s => s.newScores.raw[subj]).filter(v => v !== null && !isNaN(v));
-                const newMean = newVals.length > 0 ? ss.mean(newVals) : null;
-                
-                datasets.push({
-                    label: g, data: [oldMean, newMean],
-                    borderColor: colors[idx % colors.length], backgroundColor: colors[idx % colors.length],
-                    fill: false, tension: 0.1, pointRadius: 5
-                });
-            });
-            
-            const allOldVals = [];
-            students.forEach(s => {
+        groups.forEach((g, idx) => {
+            const groupStudents = students.filter(s => s.groupKey === g);
+            const oldVals = [];
+            groupStudents.forEach(s => {
                 const list = oldCodes.map(c => s.details[c]?.raw[subj]).filter(v => v !== undefined && v !== null);
-                if (list.length > 0) allOldVals.push(ss.mean(list));
+                if (list.length > 0) oldVals.push(ss.mean(list));
             });
-            const allOldMean = allOldVals.length > 0 ? ss.mean(allOldVals) : null;
-            const allNewVals = students.map(s => s.newScores.raw[subj]).filter(v => v !== null && !isNaN(v));
-            const allNewMean = allNewVals.length > 0 ? ss.mean(allNewVals) : null;
+            const oldMean = oldVals.length > 0 ? ss.mean(oldVals) : null;
+            
+            const newVals = [];
+            groupStudents.forEach(s => {
+                const list = newCodes.map(c => s.details[c]?.raw[subj]).filter(v => v !== undefined && v !== null);
+                if (list.length > 0) newVals.push(ss.mean(list));
+            });
+            const newMean = newVals.length > 0 ? ss.mean(newVals) : null;
             
             datasets.push({
-                label: '全級平均', data: [allOldMean, allNewMean],
-                borderColor: '#2d3748', backgroundColor: '#2d3748',
-                borderWidth: 3, borderDash: [5, 5], fill: false, tension: 0.1, pointRadius: 6
+                label: g, data: [oldMean, newMean],
+                borderColor: colors[idx % colors.length], backgroundColor: colors[idx % colors.length],
+                fill: false, tension: 0.1, pointRadius: 5
             });
-            
-            if (chartInstances['chartTwoPointTrend']) chartInstances['chartTwoPointTrend'].destroy();
-            chartInstances['chartTwoPointTrend'] = new Chart(document.getElementById('chartTwoPointTrend').getContext('2d'), {
-                type: 'line',
-                data: { labels, datasets },
-                options: {
-                    responsive: true,
-                    interaction: { mode: 'index', intersect: false },
-                    scales: { y: { title: { display: true, text: '平均分數' } } },
-                    plugins: {
-                        legend: {
-                            labels: {
-                                boxWidth: 16, boxHeight: 12,
-                                generateLabels: (chart) => chart.data.datasets.map((ds, i) => ({
-                                    text: ds.label, fillStyle: ds.borderColor, strokeStyle: ds.borderColor, lineWidth: 1, hidden: !chart.isDatasetVisible(i), datasetIndex: i
-                                }))
-                            }
+        });
+        
+        if (chartInstances['chartTwoPointTrend']) chartInstances['chartTwoPointTrend'].destroy();
+        chartInstances['chartTwoPointTrend'] = new Chart(document.getElementById('chartTwoPointTrend').getContext('2d'), {
+            type: 'line',
+            data: { labels, datasets },
+            options: {
+                responsive: true,
+                interaction: { mode: 'index', intersect: false },
+                scales: { y: { title: { display: true, text: '平均分數' } } },
+                plugins: {
+                    legend: {
+                        labels: {
+                            boxWidth: 16, boxHeight: 12,
+                            generateLabels: (chart) => chart.data.datasets.map((ds, i) => ({
+                                text: ds.label, fillStyle: ds.borderColor, strokeStyle: ds.borderColor, lineWidth: 1, hidden: !chart.isDatasetVisible(i), datasetIndex: i
+                            }))
                         }
                     }
                 }
-            });
-        }
-        
-        function renderDistributionChart(subj, newCode) {
-            const students = currentAnalysisResult.students;
-            const classes = [...new Set(students.map(s => s.class))].sort();
-            const scores = students.map(s => s.newScores.raw[subj]).filter(v => v !== null && !isNaN(v));
-            if (scores.length === 0) return;
-            
-            const mean = ss.mean(scores);
-            const std = ss.standardDeviation(scores) || 1;
-            const binSize = 5;
-            const numBins = 20;
-            const xBinCenters = Array.from({length: numBins}, (_, i) => i * binSize + binSize / 2);
-            const traces = [];
-            const colorPalette = ['#3182ce', '#dd6b20', '#319795', '#805ad5', '#e53e3e', '#718096'];
-            
-            classes.forEach((cls, idx) => {
-                const yData = Array(numBins).fill(0);
-                students.filter(s => s.class === cls).forEach(s => {
-                    const score = s.newScores.raw[subj];
-                    if (score !== null) {
-                        const binIdx = Math.min(numBins - 1, Math.floor(score / binSize));
-                        yData[binIdx]++;
-                    }
-                });
-                traces.push({ x: xBinCenters, y: yData, name: cls, type: 'bar', marker: { color: colorPalette[idx % colorPalette.length] } });
-            });
-            
-            const normalX = []; const normalY = [];
-            for (let x = 0; x <= 100; x += 1) {
-                normalX.push(x);
-                const prob = Math.exp(-0.5 * Math.pow((x - mean) / std, 2)) / (std * Math.sqrt(2 * Math.PI));
-                normalY.push(prob * scores.length * binSize);
             }
-            traces.push({ x: normalX, y: normalY, name: '常態分佈線', type: 'scatter', mode: 'lines', line: { color: 'red', width: 2.5 } });
-            
-            const layout = {
-                barmode: 'stack',
-                xaxis: { title: '分數', range: [0, 105], tickmode: 'linear', tick0: 0, dtick: 10 },
-                yaxis: { title: '人數' },
-                margin: { l: 50, r: 30, t: 30, b: 50 },
-                plot_bgcolor: '#ffffff', paper_bgcolor: '#ffffff'
-            };
-            Plotly.newPlot('chartDistributionPlotly', traces, layout, { displayModeBar: false });
-        }
+        });
+    }
+    
+    function renderDistributionChart(subj, firstNewCode) {
+        const students = currentAnalysisResult.students;
+        const classes = [...new Set(students.map(s => s.class))].sort();
+        const scores = students.map(s => s.details[firstNewCode]?.raw[subj]).filter(v => v !== null && v !== undefined && !isNaN(v));
+        if (scores.length === 0) return;
         
-        function renderMultiSubjectAttentionTable() {
-            const students = currentAnalysisResult.students;
-            const oldCodes = currentAnalysisResult.oldCodes;
-            const body = document.getElementById('multiSubjAttentionBody');
-            body.innerHTML = '';
-            
-            let dangerList = [];
-            students.forEach(s => {
-                const diffs = {};
-                ['chi_read', 'eng_read', 'math'].forEach(subj => {
-                    const newZ = s.newScores.z[subj];
-                    const oldZList = oldCodes.map(code => s.details[code]?.z[subj]).filter(v => v !== undefined && v !== null);
-                    const oldZAvg = oldZList.length > 0 ? ss.mean(oldZList) : null;
-                    diffs[subj] = (newZ !== null && oldZAvg !== null) ? (newZ - oldZAvg) : 0;
-                });
-                if (diffs['chi_read'] < -0.2 && diffs['eng_read'] < -0.2 && diffs['math'] < -0.2) {
-                    dangerList.push({ name: s.name, class: s.class, gender: s.gender, chi: diffs['chi_read'], eng: diffs['eng_read'], math: diffs['math'] });
-                }
-            });
-            
-            dangerList.sort((a,b) => (a.chi+a.eng+a.math) - (b.chi+b.eng+b.math));
-            if (dangerList.length === 0) {
-                body.innerHTML = '<tr><td colspan="6" class="text-center text-success py-3">🎉 太棒了！本屆目前無全科相對退步學生。</td></tr>';
-            } else {
-                dangerList.forEach(s => {
-                    body.innerHTML += `
-                        <tr>
-                            <td class="fw-bold">${s.class}</td>
-                            <td>${s.name}</td>
-                            <td>${s.gender}</td>
-                            <td class="text-danger fw-bold">${s.chi.toFixed(2)}</td>
-                            <td class="text-danger fw-bold">${s.eng.toFixed(2)}</td>
-                            <td class="text-danger fw-bold">${s.math.toFixed(2)}</td>
-                        </tr>
-                    `;
-                });
-            }
-        }
+        const mean = ss.mean(scores);
+        const std = ss.standardDeviation(scores) || 1;
+        const binSize = 5;
+        const numBins = 20;
+        const xBinCenters = Array.from({length: numBins}, (_, i) => i * binSize + binSize / 2);
+        const traces = [];
+        const colorPalette = ['#3182ce', '#dd6b20', '#319795', '#805ad5', '#e53e3e', '#718096'];
         
-        function renderClassRawTrendLine(subj, oldCodes, newCode) {
-            const students = currentAnalysisResult.students;
-            const groups = currentAnalysisResult.groupList;
-            const timeline = [...oldCodes, newCode].sort();
-            const datasets = [];
-            const colors = ['#3182ce', '#dd6b20', '#319795', '#805ad5', '#e53e3e', '#d69e2e', '#4a5568'];
-            
-            groups.forEach((g, idx) => {
-                const pts = [];
-                timeline.forEach(aCode => {
-                    const sc = students.filter(s => s.groupKey === g).map(s => s.details[aCode]?.raw[subj]).filter(v => v !== undefined && v !== null);
-                    pts.push(sc.length > 0 ? ss.mean(sc) : null);
-                });
-                datasets.push({ label: g, data: pts, borderColor: colors[idx % colors.length], backgroundColor: colors[idx % colors.length], fill: false, tension: 0.15 });
-            });
-            
-            const gradePts = [];
-            timeline.forEach(aCode => {
-                const sc = students.map(s => s.details[aCode]?.raw[subj]).filter(v => v !== undefined && v !== null);
-                gradePts.push(sc.length > 0 ? ss.mean(sc) : null);
-            });
-            datasets.push({ label: '全級平均', data: gradePts, borderColor: '#2d3748', backgroundColor: '#2d3748', borderWidth: 3, borderDash: [5, 5], fill: false });
-            
-            if (chartInstances['chartClassRawLine']) chartInstances['chartClassRawLine'].destroy();
-            chartInstances['chartClassRawLine'] = new Chart(document.getElementById('chartClassRawLine').getContext('2d'), {
-                type: 'line',
-                data: { labels: timeline, datasets },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    interaction: { mode: 'index', intersect: false },
-                    scales: { y: { title: { display: true, text: '平均分數' } } },
-                    plugins: {
-                        legend: {
-                            labels: {
-                                boxWidth: 16, boxHeight: 12,
-                                generateLabels: (chart) => chart.data.datasets.map((ds, i) => ({
-                                    text: ds.label, fillStyle: ds.borderColor, strokeStyle: ds.borderColor, lineWidth: 1, hidden: !chart.isDatasetVisible(i), datasetIndex: i
-                                }))
-                            }
-                        }
-                    }
+        classes.forEach((cls, idx) => {
+            const yData = Array(numBins).fill(0);
+            students.filter(s => s.class === cls).forEach(s => {
+                const score = s.details[firstNewCode]?.raw[subj];
+                if (score !== null && score !== undefined) {
+                    const binIdx = Math.min(numBins - 1, Math.floor(score / binSize));
+                    yData[binIdx]++;
                 }
             });
-        }
+            traces.push({ x: xBinCenters, y: yData, name: cls, type: 'bar', marker: { color: colorPalette[idx % colorPalette.length] } });
+        });
         
-        // ==========================================
-        // 🔔 常態連動鐘形圖與 Canvas 大箭頭標註引擎
-        // ==========================================
-        function renderRankingBellCurve(activeStudent = null) {
-            const canvas = document.getElementById('chartRankingBell');
-            if (!canvas) return;
-            
-            const bellData = [];
-            for (let z = -3.5; z <= 3.5; z += 0.05) {
-                const y = (1 / Math.sqrt(2 * Math.PI)) * Math.exp(-0.5 * z * z);
-                bellData.push({ x: parseFloat(z.toFixed(2)), y: y });
-            }
-            
-            const datasets = [
-                {
-                    label: '全級常模分佈 (Bell Curve)',
-                    data: bellData,
-                    borderColor: '#3182ce',
-                    borderWidth: 2.5,
-                    fill: true,
-                    backgroundColor: 'rgba(49, 130, 206, 0.08)',
-                    pointRadius: 0,
-                    tension: 0.3
-                }
-            ];
-            
-            const annotations = {
-                meanLine: { type: 'line', xMin: 0, xMax: 0, borderColor: '#718096', borderWidth: 1, borderDash: [4, 4] }
-            };
-            
-            document.querySelectorAll('.scale-badge').forEach(el => {
-                el.className = 'scale-badge dimmed';
-            });
-            
-            if (activeStudent) {
-                const oldZ = activeStudent.oldZ;
-                const newZ = activeStudent.newZ;
-                
-                if (oldZ !== null && !isNaN(oldZ)) {
-                    annotations.oldMarker = {
-                        type: 'line', xMin: oldZ, xMax: oldZ,
-                        borderColor: '#e53e3e', borderWidth: 3,
-                        label: {
-                            display: true,
-                            content: `舊Z: ${oldZ.toFixed(2)} (${activeStudent.oldRaw.toFixed(1)}分)`,
-                            position: 'start', backgroundColor: 'rgba(229, 62, 62, 0.9)', color: '#fff', font: { size: 11, weight: 'bold' }
-                        }
-                    };
-                }
-                
-                if (newZ !== null && !isNaN(newZ)) {
-                    annotations.newMarker = {
-                        type: 'line', xMin: newZ, xMax: newZ,
-                        borderColor: '#198754', borderWidth: 3,
-                        label: {
-                            display: true,
-                            content: `新Z: ${newZ.toFixed(2)} (${activeStudent.newRaw.toFixed(1)}分)`,
-                            position: 'end', backgroundColor: 'rgba(25, 135, 84, 0.9)', color: '#fff', font: { size: 11, weight: 'bold' }
-                        }
-                    };
-                }
-                
-                let badgeType = 'flat';
-                const zDiff = activeStudent.zDiff;
-                if (zDiff >= 0.8) badgeType = 'break_up';
-                else if (zDiff >= 0.5) badgeType = 'sig_up';
-                else if (zDiff >= 0.2) badgeType = 'mild_up';
-                else if (zDiff <= -0.8) badgeType = 'crash_down';
-                else if (zDiff <= -0.5) badgeType = 'sig_down';
-                else if (zDiff <= -0.2) badgeType = 'mild_down';
-                
-                const activeBadge = document.querySelector(`.scale-badge[data-badge="${badgeType}"]`);
-                if (activeBadge) {
-                    activeBadge.className = 'scale-badge active-highlight';
-                }
-                
-                const arrowDirection = (newZ !== null && oldZ !== null && newZ >= oldZ) ? '躍升 ➔' : '滑落 ➔';
-                const oldZText = oldZ !== null ? oldZ.toFixed(2) : '缺考';
-                const newZText = newZ !== null ? newZ.toFixed(2) : '缺考';
-                const rankText = activeStudent.oldRank ? `${activeStudent.oldRank}名 ➔ ${activeStudent.newRank}名` : `監測生 (不計名次)`;
-                
-                document.getElementById('bellStudentIndicator').innerHTML = `
-                    🎯 正在檢視學生：<span class="text-primary fs-6">${activeStudent.name} (${activeStudent.class})</span> | 
-                    常模軌跡: <span class="badge bg-danger">舊 Z: ${oldZText}</span> ${arrowDirection} 
-                    <span class="badge bg-success">新 Z: ${newZText}</span> | 
-                    全級名次: <span class="badge bg-dark">${rankText}</span>
-                `;
-            } else {
-                document.querySelectorAll('.scale-badge').forEach(el => {
-                    el.className = 'scale-badge';
-                });
-                document.getElementById('bellStudentIndicator').innerHTML = `👉 請將滑鼠移動至下方排行榜或地板監測名單中任一學生列，圖表將即時繪製該生的常模躍遷軌跡！`;
-            }
-            
-            if (chartInstances['chartRankingBell']) chartInstances['chartRankingBell'].destroy();
-            
-            // 🌟 Canvas 二次路徑實體大箭頭繪圖外掛 [2]
-            const arrowDrawPlugin = {
-                id: 'arrowDrawPlugin',
-                afterDraw: (chart) => {
-                    if (!activeStudent) return;
-                    const oldZ = activeStudent.oldZ;
-                    const newZ = activeStudent.newZ;
-                    if (oldZ === null || newZ === null || isNaN(oldZ) || isNaN(newZ)) return;
-                    
-                    const ctx = chart.ctx;
-                    const xAxis = chart.scales.x;
-                    const y = chart.chartArea.top + (chart.chartArea.bottom - chart.chartArea.top) * 0.45; 
-                    
-                    const x0 = xAxis.getPixelForValue(oldZ);
-                    const x1 = xAxis.getPixelForValue(newZ);
-                    
-                    ctx.save();
-                    ctx.beginPath();
-                    ctx.moveTo(x0, y);
-                    ctx.lineTo(x1, y);
-                    ctx.strokeStyle = '#3182ce';
-                    ctx.lineWidth = 4.5;
-                    ctx.stroke();
-                    
-                    const arrowLength = 9;
-                    const angle = Math.atan2(0, x1 - x0);
-                    ctx.beginPath();
-                    ctx.moveTo(x1, y);
-                    ctx.lineTo(x1 - arrowLength * Math.cos(angle - Math.PI/6), y - arrowLength * Math.sin(angle - Math.PI/6));
-                    ctx.lineTo(x1 - arrowLength * Math.cos(angle + Math.PI/6), y + arrowLength * Math.sin(angle + Math.PI/6));
-                    ctx.closePath();
-                    ctx.fillStyle = '#1a365d';
-                    ctx.fill();
-                    
-                    ctx.font = 'bold 12px sans-serif';
-                    ctx.fillStyle = '#1a365d';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'bottom';
-                    const midX = (x0 + x1) / 2;
-                    const zDiffVal = activeStudent.zDiff;
-                    ctx.fillText(`ΔZ = ${zDiffVal >= 0 ? '+' : ''}${zDiffVal.toFixed(2)}`, midX, y - 6);
-                    ctx.restore();
-                }
-            };
-            
-            chartInstances['chartRankingBell'] = new Chart(canvas.getContext('2d'), {
-                type: 'line',
-                data: { datasets: datasets },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: false,
-                    scales: {
-                        x: {
-                            type: 'linear', min: -3.5, max: 3.5,
-                            title: { display: true, text: '標準分數 (Z-Score)' },
-                            ticks: { stepSize: 0.5 }
-                        },
-                        y: { display: false }
-                    },
-                    plugins: {
-                        legend: { display: false },
-                        annotation: { annotations }
-                    }
-                },
-                plugins: [arrowDrawPlugin]
-            });
+        const normalX = []; const normalY = [];
+        for (let x = 0; x <= 100; x += 1) {
+            normalX.push(x);
+            const prob = Math.exp(-0.5 * Math.pow((x - mean) / std, 2)) / (std * Math.sqrt(2 * Math.PI));
+            normalY.push(prob * scores.length * binSize);
         }
+        traces.push({ x: normalX, y: normalY, name: '常態分佈線', type: 'scatter', mode: 'lines', line: { color: 'red', width: 2.5 } });
         
-        // ==========================================
-        // 🚀 雙排行榜與基礎能力監測名冊
-        // ==========================================
-        function renderTop20ProgressRegression(subj, oldCodes, newCode) {
-            const students = currentAnalysisResult.students;
-            const list = [];
-            
-            students.forEach(s => {
-                const newZ = s.newScores.z[subj];
+        const layout = {
+            barmode: 'stack',
+            xaxis: { title: '分數', range: [0, 105], tickmode: 'linear', tick0: 0, dtick: 10 },
+            yaxis: { title: '人數' },
+            margin: { l: 50, r: 30, t: 30, b: 50 },
+            plot_bgcolor: '#ffffff', paper_bgcolor: '#ffffff'
+        };
+        Plotly.newPlot('chartDistributionPlotly', traces, layout, { displayModeBar: false });
+    }
+    
+    function renderMultiSubjectAttentionTable() {
+        const students = currentAnalysisResult.students;
+        const oldCodes = currentAnalysisResult.oldCodes;
+        const newCodes = currentAnalysisResult.newCodes;
+        const body = document.getElementById('multiSubjAttentionBody');
+        body.innerHTML = '';
+        
+        let dangerList = [];
+        students.forEach(s => {
+            const diffs = {};
+            ['chi_read', 'eng_read', 'math'].forEach(subj => {
+                const newZList = newCodes.map(code => s.details[code]?.z[subj]).filter(v => v !== undefined && v !== null);
+                const newZAvg = newZList.length > 0 ? ss.mean(newZList) : null;
                 const oldZList = oldCodes.map(code => s.details[code]?.z[subj]).filter(v => v !== undefined && v !== null);
                 const oldZAvg = oldZList.length > 0 ? ss.mean(oldZList) : null;
                 
-                const newRaw = s.newScores.raw[subj];
-                const oldRawList = oldCodes.map(code => s.details[code]?.raw[subj]).filter(v => v !== undefined && v !== null);
-                const oldRawAvg = oldRawList.length > 0 ? ss.mean(oldRawList) : null;
+                diffs[subj] = (newZAvg !== null && oldZAvg !== null) ? (newZAvg - oldZAvg) : 0;
+            });
+            if (diffs['chi_read'] < -0.2 && diffs['eng_read'] < -0.2 && diffs['math'] < -0.2) {
+                dangerList.push({ name: s.name, class: s.class, gender: s.gender, chi: diffs['chi_read'], eng: diffs['eng_read'], math: diffs['math'] });
+            }
+        });
+        
+        dangerList.sort((a,b) => (a.chi+a.eng+a.math) - (b.chi+b.eng+b.math));
+        if (dangerList.length === 0) {
+            body.innerHTML = '<tr><td colspan="6" class="text-center text-success py-3">🎉 太棒了！本屆目前無全科相對退步學生。</td></tr>';
+        } else {
+            dangerList.forEach(s => {
+                body.innerHTML += `
+                    <tr>
+                        <td class="fw-bold">${s.class}</td>
+                        <td>${s.name}</td>
+                        <td>${s.gender}</td>
+                        <td class="text-danger fw-bold">${s.chi.toFixed(2)}</td>
+                        <td class="text-danger fw-bold">${s.eng.toFixed(2)}</td>
+                        <td class="text-danger fw-bold">${s.math.toFixed(2)}</td>
+                    </tr>
+                `;
+            });
+        }
+    }
+    
+    function renderClassRawTrendLine(subj, oldCodes, newCodes) {
+        const students = currentAnalysisResult.students;
+        const groups = currentAnalysisResult.groupList;
+        const timeline = [...oldCodes, ...newCodes].sort(); // 跨所有歷史點走勢
+        const datasets = [];
+        const colors = ['#3182ce', '#dd6b20', '#319795', '#805ad5', '#e53e3e', '#d69e2e', '#4a5568'];
+        
+        groups.forEach((g, idx) => {
+            const pts = [];
+            timeline.forEach(aCode => {
+                const sc = students.filter(s => s.groupKey === g).map(s => s.details[aCode]?.raw[subj]).filter(v => v !== undefined && v !== null);
+                pts.push(sc.length > 0 ? ss.mean(sc) : null);
+            });
+            datasets.push({ label: g, data: pts, borderColor: colors[idx % colors.length], backgroundColor: colors[idx % colors.length], fill: false, tension: 0.15 });
+        });
+        
+        const gradePts = [];
+        timeline.forEach(aCode => {
+            const sc = students.map(s => s.details[aCode]?.raw[subj]).filter(v => v !== undefined && v !== null);
+            gradePts.push(sc.length > 0 ? ss.mean(sc) : null);
+        });
+        datasets.push({ label: '全級平均', data: gradePts, borderColor: '#2d3748', backgroundColor: '#2d3748', borderWidth: 3, borderDash: [5, 5], fill: false });
+        
+        if (chartInstances['chartClassRawLine']) chartInstances['chartClassRawLine'].destroy();
+        chartInstances['chartClassRawLine'] = new Chart(document.getElementById('chartClassRawLine').getContext('2d'), {
+            type: 'line',
+            data: { labels: timeline, datasets },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                scales: { y: { title: { display: true, text: '平均分數' } } },
+                plugins: {
+                    legend: {
+                        labels: {
+                            boxWidth: 16, boxHeight: 12,
+                            generateLabels: (chart) => chart.data.datasets.map((ds, i) => ({
+                                text: ds.label, fillStyle: ds.borderColor, strokeStyle: ds.borderColor, lineWidth: 1, hidden: !chart.isDatasetVisible(i), datasetIndex: i
+                            }))
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // ==========================================
+    // 🔔 常態連動鐘形圖與 Canvas 大箭頭標註引擎 [2]
+    // ==========================================
+    function renderRankingBellCurve(activeStudent = null) {
+        const canvas = document.getElementById('chartRankingBell');
+        if (!canvas) return;
+        
+        const bellData = [];
+        for (let z = -3.5; z <= 3.5; z += 0.05) {
+            const y = (1 / Math.sqrt(2 * Math.PI)) * Math.exp(-0.5 * z * z);
+            bellData.push({ x: parseFloat(z.toFixed(2)), y: y });
+        }
+        
+        const datasets = [
+            {
+                label: '全級常模分佈 (Bell Curve)',
+                data: bellData,
+                borderColor: '#3182ce',
+                borderWidth: 2.5,
+                fill: true,
+                backgroundColor: 'rgba(49, 130, 206, 0.08)',
+                pointRadius: 0,
+                tension: 0.3
+            }
+        ];
+        
+        const annotations = {
+            meanLine: { type: 'line', xMin: 0, xMax: 0, borderColor: '#718096', borderWidth: 1, borderDash: [4, 4] }
+        };
+        
+        document.querySelectorAll('.scale-badge').forEach(el => {
+            el.className = 'scale-badge dimmed';
+        });
+        
+        if (activeStudent) {
+            const oldZ = activeStudent.oldZ;
+            const newZ = activeStudent.newZ;
+            
+            if (oldZ !== null && !isNaN(oldZ)) {
+                annotations.oldMarker = {
+                    type: 'line', xMin: oldZ, xMax: oldZ,
+                    borderColor: '#e53e3e', borderWidth: 3,
+                    label: {
+                        display: true,
+                        content: `舊Z: ${oldZ.toFixed(2)} (${activeStudent.oldRaw.toFixed(1)}分)`,
+                        position: 'start', backgroundColor: 'rgba(229, 62, 62, 0.9)', color: '#fff', font: { size: 11, weight: 'bold' }
+                    }
+                };
+            }
+            
+            if (newZ !== null && !isNaN(newZ)) {
+                annotations.newMarker = {
+                    type: 'line', xMin: newZ, xMax: newZ,
+                    borderColor: '#198754', borderWidth: 3,
+                    label: {
+                        display: true,
+                        content: `新Z: ${newZ.toFixed(2)} (${activeStudent.newRaw.toFixed(1)}分)`,
+                        position: 'end', backgroundColor: 'rgba(25, 135, 84, 0.9)', color: '#fff', font: { size: 11, weight: 'bold' }
+                    }
+                };
+            }
+            
+            let badgeType = 'flat';
+            const zDiff = activeStudent.zDiff;
+            if (zDiff >= 0.8) badgeType = 'break_up';
+            else if (zDiff >= 0.5) badgeType = 'sig_up';
+            else if (zDiff >= 0.2) badgeType = 'mild_up';
+            else if (zDiff <= -0.8) badgeType = 'crash_down';
+            else if (zDiff <= -0.5) badgeType = 'sig_down';
+            else if (zDiff <= -0.2) badgeType = 'mild_down';
+            
+            const activeBadge = document.querySelector(`.scale-badge[data-badge="${badgeType}"]`);
+            if (activeBadge) {
+                activeBadge.className = 'scale-badge active-highlight';
+            }
+            
+            const arrowDirection = (newZ !== null && oldZ !== null && newZ >= oldZ) ? '躍升 ➔' : '滑落 ➔';
+            const oldZText = oldZ !== null ? oldZ.toFixed(2) : '缺考';
+            const newZText = newZ !== null ? newZ.toFixed(2) : '缺考';
+            const rankText = activeStudent.oldRank ? `${activeStudent.oldRank}名 ➔ ${activeStudent.newRank}名` : `監測生 (不計名次)`;
+            
+            document.getElementById('bellStudentIndicator').innerHTML = `
+                🎯 正在檢視學生：<span class="text-primary fs-6">${activeStudent.name} (${activeStudent.class})</span> | 
+                常模軌跡: <span class="badge bg-danger">舊 Z: ${oldZText}</span> ${arrowDirection} 
+                <span class="badge bg-success">新 Z: ${newZText}</span> | 
+                全級名次: <span class="badge bg-dark">${rankText}</span>
+            `;
+        } else {
+            document.querySelectorAll('.scale-badge').forEach(el => {
+                el.className = 'scale-badge';
+            });
+            document.getElementById('bellStudentIndicator').innerHTML = `👉 請將滑鼠移動至下方排行榜或地板監測名單中任一學生列，圖表將即時繪製該生的常模躍遷軌跡！`;
+        }
+        
+        if (chartInstances['chartRankingBell']) chartInstances['chartRankingBell'].destroy();
+        
+        // Canvas 二次路徑實體大箭頭繪圖外掛 (完美相容全寬圖表) [2, 3]
+        const arrowDrawPlugin = {
+            id: 'arrowDrawPlugin',
+            afterDraw: (chart) => {
+                if (!activeStudent) return;
+                const oldZ = activeStudent.oldZ;
+                const newZ = activeStudent.newZ;
+                if (oldZ === null || newZ === null || isNaN(oldZ) || isNaN(newZ)) return;
                 
-                if (newZ !== null && oldZAvg !== null && newRaw !== null && oldRawAvg !== null) {
-                    list.push({
-                        name: s.name, class: s.class, regNo: s.regNo, gender: s.gender, classNo: s.classNo,
-                        zDiff: newZ - oldZAvg,
-                        rawDiff: newRaw - oldRawAvg,
-                        oldZ: oldZAvg, newZ: newZ,
-                        oldRaw: oldRawAvg, newRaw: newRaw
+                const ctx = chart.ctx;
+                const xAxis = chart.scales.x;
+                const y = chart.chartArea.top + (chart.chartArea.bottom - chart.chartArea.top) * 0.45; 
+                
+                const x0 = xAxis.getPixelForValue(oldZ);
+                const x1 = xAxis.getPixelForValue(newZ);
+                
+                ctx.save();
+                ctx.beginPath();
+                ctx.moveTo(x0, y);
+                ctx.lineTo(x1, y);
+                ctx.strokeStyle = '#3182ce';
+                ctx.lineWidth = 4.5;
+                ctx.stroke();
+                
+                const arrowLength = 9;
+                const angle = Math.atan2(0, x1 - x0);
+                ctx.beginPath();
+                ctx.moveTo(x1, y);
+                ctx.lineTo(x1 - arrowLength * Math.cos(angle - Math.PI/6), y - arrowLength * Math.sin(angle - Math.PI/6));
+                ctx.lineTo(x1 - arrowLength * Math.cos(angle + Math.PI/6), y + arrowLength * Math.sin(angle + Math.PI/6));
+                ctx.closePath();
+                ctx.fillStyle = '#1a365d';
+                ctx.fill();
+                
+                ctx.font = 'bold 12px sans-serif';
+                ctx.fillStyle = '#1a365d';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'bottom';
+                const midX = (x0 + x1) / 2;
+                const zDiffVal = activeStudent.zDiff;
+                ctx.fillText(`ΔZ = ${zDiffVal >= 0 ? '+' : ''}${zDiffVal.toFixed(2)}`, midX, y - 6);
+                ctx.restore();
+            }
+        };
+        
+        chartInstances['chartRankingBell'] = new Chart(canvas.getContext('2d'), {
+            type: 'line',
+            data: { datasets: datasets },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                animation: false,
+                scales: {
+                    x: {
+                        type: 'linear', min: -3.5, max: 3.5,
+                        title: { display: true, text: '標準分數 (Z-Score)' },
+                        ticks: { stepSize: 0.5 }
+                    },
+                    y: { display: false }
+                },
+                plugins: {
+                    legend: { display: false },
+                    annotation: { annotations }
+                }
+            },
+            plugins: [arrowDrawPlugin]
+        });
+    }
+    
+    // ==========================================
+    // 🚀 雙排行榜與基礎能力監測名冊
+    // ==========================================
+    function renderTop20ProgressRegression(subj, oldCodes, newCodes) {
+        const students = currentAnalysisResult.students;
+        const list = [];
+        
+        students.forEach(s => {
+            const newZList = newCodes.map(code => s.details[code]?.z[subj]).filter(v => v !== undefined && v !== null);
+            const newZAvg = newZList.length > 0 ? ss.mean(newZList) : null;
+            const oldZList = oldCodes.map(code => s.details[code]?.z[subj]).filter(v => v !== undefined && v !== null);
+            const oldZAvg = oldZList.length > 0 ? ss.mean(oldZList) : null;
+            
+            const newRawList = newCodes.map(code => s.details[code]?.raw[subj]).filter(v => v !== undefined && v !== null);
+            const newRawAvg = newRawList.length > 0 ? ss.mean(newRawList) : null;
+            const oldRawList = oldCodes.map(code => s.details[code]?.raw[subj]).filter(v => v !== undefined && v !== null);
+            const oldRawAvg = oldRawList.length > 0 ? ss.mean(oldRawList) : null;
+            
+            if (newZAvg !== null && oldZAvg !== null && newRawAvg !== null && oldRawAvg !== null) {
+                list.push({
+                    name: s.name, class: s.class, regNo: s.regNo, gender: s.gender, classNo: s.classNo,
+                    zDiff: newZAvg - oldZAvg,
+                    rawDiff: newRawAvg - oldRawAvg,
+                    oldZ: oldZAvg, newZ: newZAvg,
+                    oldRaw: oldRawAvg, newRaw: newRawAvg
+                });
+            }
+        });
+        
+        const FLOOR_THRESHOLD = 35;
+        const normalList = [];
+        const floorList = [];
+        
+        list.forEach(item => {
+            if (item.newRaw < FLOOR_THRESHOLD || item.oldRaw < FLOOR_THRESHOLD) {
+                floorList.push(item);
+            } else {
+                normalList.push(item);
+            }
+        });
+        
+        const oldSorted = [...normalList].sort((a,b) => b.oldZ - a.oldZ);
+        normalList.forEach(item => {
+            const rIdx = oldSorted.findIndex(x => x.regNo === item.regNo);
+            item.oldRank = rIdx + 1;
+        });
+        
+        const newSorted = [...normalList].sort((a,b) => b.newZ - a.newZ);
+        normalList.forEach(item => {
+            const rIdx = newSorted.findIndex(x => x.regNo === item.regNo);
+            item.newRank = rIdx + 1;
+            item.rankDiff = item.oldRank - item.newRank;
+        });
+        
+        rankingStudentsList = [...normalList, ...floorList];
+        
+        const getBadgeHTML = (zDiff) => {
+            if (zDiff >= 0.8) return `<span class="badge" style="background-color:#198754 !important; color:white;">🌟 突破性躍進</span>`;
+            if (zDiff >= 0.5) return `<span class="badge" style="background-color:#3182ce !important; color:white;">🚀 顯著進步</span>`;
+            if (zDiff >= 0.2) return `<span class="badge" style="background-color:#d69e2e !important; color:white;">📈 溫和微步</span>`;
+            if (zDiff <= -0.8) return `<span class="badge" style="background-color:#e53e3e !important; color:white;">🚨 斷崖式失守</span>`;
+            if (zDiff <= -0.5) return `<span class="badge" style="background-color:#dd6b20 !important; color:white;">📉 顯著滑落</span>`;
+            if (zDiff <= -0.2) return `<span class="badge" style="background-color:#ed8936 !important; color:white;">⚠️ 溫和退步</span>`;
+            return `<span class="badge" style="background-color:#718096 !important; color:white;">⚖️ 穩健持平</span>`;
+        };
+        
+        // A. 卓越進步排行榜
+        normalList.sort((a,b) => b.zDiff - a.zDiff);
+        const top20 = normalList.slice(0, 20);
+        const progressBody = document.getElementById('rankingProgressBody');
+        progressBody.innerHTML = top20.map((s, idx) => {
+            const rankText = s.rankDiff > 0 ? `(↑${s.rankDiff})` : s.rankDiff < 0 ? `(↓${Math.abs(s.rankDiff)})` : `(持平)`;
+            const rankColor = s.rankDiff > 0 ? 'text-success' : s.rankDiff < 0 ? 'text-danger' : 'text-muted';
+            const rawSign = s.rawDiff > 0 ? '+' : '';
+            const rawColor = s.rawDiff >= 0 ? 'text-success' : 'text-danger';
+            
+            return `
+                <tr class="hover-row" onmouseenter="onHoverStudentRanking('${s.regNo}')" onmouseleave="onLeaveStudentRanking()">
+                    <td><span class="badge bg-success">${idx + 1}</span></td>
+                    <td class="fw-bold">${s.class}</td>
+                    <td class="fw-bold text-dark">${s.name}</td>
+                    <td class="text-secondary fw-bold">${s.oldZ.toFixed(2)}</td>
+                    <td class="text-dark fw-bold">${s.newZ.toFixed(2)}</td>
+                    <td><span class="fw-bold text-success">+${s.zDiff.toFixed(2)}</span> ${getBadgeHTML(s.zDiff)}</td>
+                    <td>${s.oldRank} ➔ ${s.newRank} <small class="${rankColor} fw-bold">${rankText}</small></td>
+                    <td>${s.oldRaw.toFixed(1)}分 ➔ ${s.newRaw.toFixed(1)}分</td>
+                    <td class="${rawColor} fw-bold">${rawSign}${s.rawDiff.toFixed(1)}分</td>
+                </tr>
+            `;
+        }).join('');
+        
+        // B. 重點關懷排行榜
+        normalList.sort((a,b) => a.zDiff - b.zDiff);
+        const bottom20 = normalList.slice(0, 20);
+        const regressBody = document.getElementById('rankingRegressBody');
+        regressBody.innerHTML = bottom20.map((s, idx) => {
+            const rankText = s.rankDiff > 0 ? `(↑${s.rankDiff})` : s.rankDiff < 0 ? `(↓${Math.abs(s.rankDiff)})` : `(持平)`;
+            const rankColor = s.rankDiff > 0 ? 'text-success' : s.rankDiff < 0 ? 'text-danger' : 'text-muted';
+            const rawSign = s.rawDiff > 0 ? '+' : '';
+            const rawColor = s.rawDiff >= 0 ? 'text-success' : 'text-danger';
+            
+            return `
+                <tr class="hover-row" onmouseenter="onHoverStudentRanking('${s.regNo}')" onmouseleave="onLeaveStudentRanking()">
+                    <td><span class="badge bg-danger">${idx + 1}</span></td>
+                    <td class="fw-bold">${s.class}</td>
+                    <td class="fw-bold text-dark">${s.name}</td>
+                    <td class="text-secondary fw-bold">${s.oldZ.toFixed(2)}</td>
+                    <td class="text-dark fw-bold">${s.newZ.toFixed(2)}</td>
+                    <td><span class="fw-bold text-danger">${s.zDiff.toFixed(2)}</span> ${getBadgeHTML(s.zDiff)}</td>
+                    <td>${s.oldRank} ➔ ${s.newRank} <small class="${rankColor} fw-bold">${rankText}</small></td>
+                    <td>${s.oldRaw.toFixed(1)}分 ➔ ${s.newRaw.toFixed(1)}分</td>
+                    <td class="${rawColor} fw-bold">${rawSign}${s.rawDiff.toFixed(1)}分</td>
+                </tr>
+            `;
+        }).join('');
+        
+        // C. 基礎能力監測名單
+        document.getElementById('floorCountBadge').innerText = `${floorList.length} 人`;
+        const floorBody = document.getElementById('floorMonitoringBody');
+        floorList.sort((a,b) => a.newRaw - b.newRaw);
+        
+        if (floorList.length === 0) {
+            floorBody.innerHTML = '<tr><td colspan="8" class="text-center text-success py-3">🎉 太好了！全級無低於 35 分的地板學童。</td></tr>';
+        } else {
+            floorBody.innerHTML = floorList.map(s => {
+                const rawSign = s.rawDiff > 0 ? '+' : '';
+                const rawColor = s.rawDiff >= 0 ? 'text-success' : 'text-danger';
+                let advice = '❌ 處於猜測盲區。建議由科任老師進行個別課堂作答質性診斷。';
+                if (s.rawDiff > 0) advice = '📈 原始分微幅回升，但仍處地板區。建議納入課後抽離補救小組加強。';
+                else if (s.rawDiff < 0) advice = '⚠️ 分數與常模持續下滑。建議啟動第 3 層學業介入支援與心理關懷。';
+                
+                return `
+                    <tr class="hover-row" onmouseenter="onHoverStudentRanking('${s.regNo}')" onmouseleave="onLeaveStudentRanking()">
+                        <td class="text-muted small">${s.regNo}</td>
+                        <td class="fw-bold">${s.class}</td>
+                        <td class="fw-bold text-dark">${s.name}</td>
+                        <td>${s.gender}</td>
+                        <td class="text-muted">${s.oldRaw.toFixed(1)}分</td>
+                        <td class="fw-bold text-danger">${s.newRaw.toFixed(1)}分</td>
+                        <td class="${rawColor} fw-bold">${rawSign}${s.rawDiff.toFixed(1)}分</td>
+                        <td class="text-start small text-dark">${advice}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+    }
+    
+    window.onHoverStudentRanking = function(regNo) {
+        const student = rankingStudentsList.find(s => s.regNo === regNo);
+        if (student) renderRankingBellCurve(student);
+    };
+    
+    window.onLeaveStudentRanking = function() {
+        renderRankingBellCurve(null);
+    };
+    
+    // ==========================================
+    // 🧭 四象限散佈圖與分類名冊 (色彩對調優化) [5]
+    // ==========================================
+    window.renderQuadrantWithFilter = function() {
+        const subj = document.getElementById('subjectSelector').value;
+        const filterClass = document.getElementById('quadrantClassSelector').value;
+        const filterTicks = Array.from(document.querySelectorAll('#filter-chartQuadrant .micro-tick:checked')).map(el => el.value);
+        renderQuadrantChart(subj, filterTicks, currentAnalysisResult.newCodes, filterClass);
+    };
+    
+    function renderQuadrantChart(subj, oldCodes, newCodes, filterClass) {
+        const students = currentAnalysisResult.students;
+        const scatterData = [];
+        const listLead = []; const listGrowth = []; const listDoubleDrop = []; const listWarning = []; const listFlat = [];
+        
+        students.forEach(s => {
+            if (filterClass !== 'all' && s.class !== filterClass) return;
+            const newZList = newCodes.map(code => s.details[code]?.z[subj]).filter(v => v !== undefined && v !== null);
+            const newZAvg = newZList.length > 0 ? ss.mean(newZList) : null;
+            const oldZList = oldCodes.map(code => s.details[code]?.z[subj]).filter(v => v !== undefined && v !== null);
+            const oldZAvg = oldZList.length > 0 ? ss.mean(oldZList) : null;
+            
+            if (newZAvg !== null && oldZAvg !== null) {
+                const xVal = oldZAvg;
+                const yVal = newZAvg - oldZAvg;
+                
+                const item = {
+                    x: xVal, y: yVal, name: s.name, class: s.class, classNo: s.classNo, regNo: s.regNo, group: s.groupKey,
+                    oldRaw: s.oldScores.raw[subj], newRaw: s.newScores.raw[subj], rawDiff: s.newScores.raw[subj] - s.oldScores.raw[subj]
+                };
+                scatterData.push(item);
+                
+                if (Math.abs(yVal) <= 0.2) {
+                    listFlat.push(item);
+                } else {
+                    if (xVal >= 0 && yVal > 0.2) listLead.push(item);
+                    else if (xVal < 0 && yVal > 0.2) listGrowth.push(item);
+                    else if (xVal < 0 && yVal < -0.2) listDoubleDrop.push(item);
+                    else if (xVal >= 0 && yVal < -0.2) listWarning.push(item);
+                }
+            }
+        });
+        
+        const renderQuadTableList = (elId, list, isPositiveProgress = true) => {
+            const el = document.getElementById(elId);
+            list.sort((a, b) => isPositiveProgress ? b.y - a.y : a.y - b.y);
+            if (list.length === 0) { el.innerHTML = '<div class="text-muted p-1 text-center small">空</div>'; return; }
+            el.innerHTML = list.map(s => `
+                <div class="d-flex justify-content-between hover-row p-1 border-bottom" onmouseenter="onHoverStudentRanking('${s.regNo}')" onmouseleave="onLeaveStudentRanking()">
+                    <span><b>${s.classNo}號</b> ${s.name} (${s.class})</span>
+                    <span class="fw-bold ${s.y >= 0 ? 'text-success' : 'text-danger'}">ΔZ: ${s.y >= 0 ? '+' : ''}${s.y.toFixed(2)}</span>
+                </div>
+            `).join('');
+        };
+        
+        renderQuadTableList('quadList_lead', listLead, true);
+        renderQuadTableList('quadList_growth', listGrowth, true);
+        renderQuadTableList('quadList_double_drop', listDoubleDrop, false);
+        renderQuadTableList('quadList_warning', listWarning, false);
+        renderQuadTableList('quadList_flat', listFlat, true);
+        
+        const annotations = {
+            lineX: { type: 'line', xMin: 0, xMax: 0, borderColor: '#cbd5e0', borderWidth: 1.5 },
+            lineY: { type: 'line', yMin: 0, yMax: 0, borderColor: '#cbd5e0', borderWidth: 1.5 },
+            flatUpper: { type: 'line', yMin: 0.2, yMax: 0.2, borderColor: '#cbd5e0', borderWidth: 1, borderDash: [3,3] },
+            flatLower: { type: 'line', yMin: -0.2, yMax: -0.2, borderColor: '#cbd5e0', borderWidth: 1, borderDash: [3,3] }
+        };
+        
+        const isSingleClassSelected = filterClass !== 'all';
+        
+        if (chartInstances['chartQuadrant']) chartInstances['chartQuadrant'].destroy();
+        chartInstances['chartQuadrant'] = new Chart(document.getElementById('chartQuadrant').getContext('2d'), {
+            type: 'scatter',
+            data: {
+                datasets: [{
+                    label: '學生分佈', data: scatterData,
+                    backgroundColor: scatterData.map(d => {
+                        // 🌟 應您指示：逆勢成長(第二象限) 改藍色(#3182ce)；警訊高分(第四象限) 改黃色(#d69e2e) [5]
+                        if (d.x >= 0 && d.y > 0.2) return '#198754'; // 穩步領先 ➔ 綠色
+                        if (d.x < 0 && d.y > 0.2) return '#3182ce';  // 逆勢成長 ➔ 藍色 [5]
+                        if (d.x < 0 && d.y < -0.2) return '#dc3545'; // 雙重落後 ➔ 紅色
+                        if (d.x >= 0 && d.y < -0.2) return '#d69e2e'; // 警訊高分 ➔ 黃色 [5]
+                        return '#cbd5e0'; // 持平穩定 ➔ 灰色
+                    }),
+                    pointRadius: 6
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                scales: {
+                    x: { title: { display: true, text: '基礎能力 (舊成績平均 Z-Score)' } },
+                    y: { title: { display: true, text: '學習動能 (Z-Score 相對進退步)' } }
+                },
+                plugins: {
+                    tooltip: { callbacks: { label: (c) => `${c.raw.classNo}號 ${c.raw.name}: 舊均:${c.raw.oldRaw.toFixed(1)}分 ➔ 新:${c.raw.newRaw.toFixed(1)}分 (ΔZ:${c.raw.y.toFixed(2)})` } },
+                    annotation: { annotations }
+                }
+            },
+            plugins: [{
+                id: 'classLabelPlugin',
+                afterDatasetsDraw: (chart) => {
+                    if (!isSingleClassSelected) return;
+                    const ctx = chart.ctx;
+                    ctx.save();
+                    ctx.font = 'bold 10px sans-serif';
+                    ctx.fillStyle = '#2d3748';
+                    chart.data.datasets[0].data.forEach((d, idx) => {
+                        const meta = chart.getDatasetMeta(0);
+                        const pt = meta.data[idx];
+                        if (pt && !pt.skip) {
+                            ctx.fillText(d.name, pt.x + 8, pt.y + (idx % 3 - 1) * 6);
+                        }
+                    });
+                    ctx.restore();
+                }
+            }]
+        });
+    }
+    
+    // ==========================================
+    // 🔍 經典啞鈴圖：中英數三行並排與自然班號排序 [4]
+    // ==========================================
+    function renderDetailDumbbellChart() {
+        const selGroup = document.getElementById('groupDetailSelector').value;
+        const sortVal = document.getElementById('sortSelector').value;
+        const checkedOld = Array.from(document.querySelectorAll('#filter-dumbbellChart .micro-tick:checked')).map(el => el.value);
+        
+        const allSubjectMode = document.getElementById('dumbbellSubjectAllMode').checked;
+        const currentMainSubj = document.getElementById('subjectSelector').value;
+        
+        let gStudents = currentAnalysisResult.students.filter(s => s.groupKey === selGroup);
+        
+        // 🌟 按自然班號正序排列 [4]
+        gStudents.sort((a, b) => a.classNo - b.classNo);
+        
+        if (sortVal === 'new_score_desc') {
+            gStudents.sort((a, b) => (b.newScores.raw[currentMainSubj] || 0) - (a.newScores.raw[currentMainSubj] || 0));
+        } else if (sortVal === 'old_score_desc') {
+            gStudents.sort((a, b) => (b.oldScores.raw[currentMainSubj] || 0) - (a.oldScores.raw[currentMainSubj] || 0));
+        } else if (sortVal === 'diff_desc') {
+            gStudents.sort((a, b) => {
+                const diffA = (a.newScores.z[currentMainSubj] || 0) - (a.oldScores.z[currentMainSubj] || 0);
+                const diffB = (b.newScores.z[currentMainSubj] || 0) - (b.oldScores.z[currentMainSubj] || 0);
+                return diffB - diffA;
+            });
+        }
+        
+        const pad = (n) => String(n).padStart(2, '0');
+        const traces = [];
+        const annotations = [];
+        
+        if (!allSubjectMode) {
+            const subj = currentMainSubj;
+            const labels = gStudents.map(s => `${pad(s.classNo)}. ${s.name}`);
+            const oldRawList = [];
+            const newRawList = [];
+            
+            gStudents.forEach((s, idx) => {
+                const newRaw = s.newScores.raw[subj];
+                const oldList = checkedOld.map(code => s.details[code]?.raw[subj]).filter(v => v !== undefined && v !== null);
+                const oldRawAvg = oldList.length > 0 ? ss.mean(oldList) : null;
+                
+                oldRawList.push(oldRawAvg);
+                newRawList.push(newRaw);
+                
+                if (newRaw !== null && oldRawAvg !== null) {
+                    const diff = (s.newScores.z[subj] || 0) - (s.oldScores.z[subj] || 0);
+                    const color = diff > 0.2 ? '#2ca02c' : diff < -0.2 ? '#d62728' : '#718096';
+                    annotations.push({
+                        x: newRaw, y: labels[idx], ax: oldRawAvg, ay: labels[idx],
+                        xref: 'x', yref: 'y', axref: 'x', ayref: 'y',
+                        showarrow: true, arrowhead: 2, arrowsize: 1, arrowwidth: 2, arrowcolor: color
+                    });
+                    annotations.push({
+                        x: Math.max(oldRawAvg, newRaw) + 2.5, y: labels[idx], xref: 'x', yref: 'y',
+                        text: `${newRaw.toFixed(0)}分 (${diff >= 0 ? '+' : ''}${diff.toFixed(2)})`,
+                        showarrow: false, font: { color: color, size: 10, weight: 'bold' }, xanchor: 'left'
                     });
                 }
             });
             
-            const FLOOR_THRESHOLD = 35;
-            const normalList = [];
-            const floorList = [];
+            traces.push({ x: oldRawList, y: labels, mode: 'markers', marker: { color: '#cbd5e0', size: 10 }, name: '舊成績平均' });
+            traces.push({ x: newRawList, y: labels, mode: 'markers', marker: { color: '#198754', size: 12 }, name: '新成績' });
             
-            list.forEach(item => {
-                if (item.newRaw < FLOOR_THRESHOLD || item.oldRaw < FLOOR_THRESHOLD) {
-                    floorList.push(item);
-                } else {
-                    normalList.push(item);
-                }
-            });
+        } else {
+            const multiLabels = [];
+            const oldRawList = [];
+            const newRawList = [];
+            const markerColors = [];
             
-            const oldSorted = [...normalList].sort((a,b) => b.oldZ - a.oldZ);
-            normalList.forEach(item => {
-                const rIdx = oldSorted.findIndex(x => x.regNo === item.regNo);
-                item.oldRank = rIdx + 1;
-            });
-            
-            const newSorted = [...normalList].sort((a,b) => b.newZ - a.newZ);
-            normalList.forEach(item => {
-                const rIdx = newSorted.findIndex(x => x.regNo === item.regNo);
-                item.newRank = rIdx + 1;
-                item.rankDiff = item.oldRank - item.newRank;
-            });
-            
-            rankingStudentsList = [...normalList, ...floorList];
-            
-            const getBadgeHTML = (zDiff) => {
-                if (zDiff >= 0.8) return `<span class="badge" style="background-color:#198754 !important; color:white;">🌟 突破性躍進</span>`;
-                if (zDiff >= 0.5) return `<span class="badge" style="background-color:#3182ce !important; color:white;">🚀 顯著進步</span>`;
-                if (zDiff >= 0.2) return `<span class="badge" style="background-color:#d69e2e !important; color:white;">📈 溫和微步</span>`;
-                if (zDiff <= -0.8) return `<span class="badge" style="background-color:#e53e3e !important; color:white;">🚨 斷崖式失守</span>`;
-                if (zDiff <= -0.5) return `<span class="badge" style="background-color:#dd6b20 !important; color:white;">📉 顯著滑落</span>`;
-                if (zDiff <= -0.2) return `<span class="badge" style="background-color:#ed8936 !important; color:white;">⚠️ 溫和退步</span>`;
-                return `<span class="badge" style="background-color:#718096 !important; color:white;">⚖️ 穩健持平</span>`;
-            };
-            
-            // A. 卓越進步排行榜
-            normalList.sort((a,b) => b.zDiff - a.zDiff);
-            const top20 = normalList.slice(0, 20);
-            const progressBody = document.getElementById('rankingProgressBody');
-            progressBody.innerHTML = top20.map((s, idx) => {
-                const rankText = s.rankDiff > 0 ? `(↑${s.rankDiff})` : s.rankDiff < 0 ? `(↓${Math.abs(s.rankDiff)})` : `(持平)`;
-                const rankColor = s.rankDiff > 0 ? 'text-success' : s.rankDiff < 0 ? 'text-danger' : 'text-muted';
-                const rawSign = s.rawDiff > 0 ? '+' : '';
-                const rawColor = s.rawDiff >= 0 ? 'text-success' : 'text-danger';
+            gStudents.forEach(s => {
+                const studentBaseLabel = `${pad(s.classNo)}. ${s.name}`;
+                const subjects = [
+                    { key: 'chi_read', name: '中', color: '#1f77b4' },
+                    { key: 'eng_read', name: '英', color: '#ff7f0e' },
+                    { key: 'math',     name: '數', color: '#2ca02c' }
+                ];
                 
-                return `
-                    <tr class="hover-row" onmouseenter="onHoverStudentRanking('${s.regNo}')" onmouseleave="onLeaveStudentRanking()">
-                        <td><span class="badge bg-success">${idx + 1}</span></td>
-                        <td class="fw-bold">${s.class}</td>
-                        <td class="fw-bold text-dark">${s.name}</td>
-                        <td class="text-secondary fw-bold">${s.oldZ.toFixed(2)}</td>
-                        <td class="text-dark fw-bold">${s.newZ.toFixed(2)}</td>
-                        <td><span class="fw-bold text-success">+${s.zDiff.toFixed(2)}</span> ${getBadgeHTML(s.zDiff)}</td>
-                        <td>${s.oldRank} ➔ ${s.newRank} <small class="${rankColor} fw-bold">${rankText}</small></td>
-                        <td>${s.oldRaw.toFixed(1)}分 ➔ ${s.newRaw.toFixed(1)}分</td>
-                        <td class="${rawColor} fw-bold">${rawSign}${s.rawDiff.toFixed(1)}分</td>
-                    </tr>
-                `;
-            }).join('');
-            
-            // B. 重點關懷排行榜
-            normalList.sort((a,b) => a.zDiff - b.zDiff);
-            const bottom20 = normalList.slice(0, 20);
-            const regressBody = document.getElementById('rankingRegressBody');
-            regressBody.innerHTML = bottom20.map((s, idx) => {
-                const rankText = s.rankDiff > 0 ? `(↑${s.rankDiff})` : s.rankDiff < 0 ? `(↓${Math.abs(s.rankDiff)})` : `(持平)`;
-                const rankColor = s.rankDiff > 0 ? 'text-success' : s.rankDiff < 0 ? 'text-danger' : 'text-muted';
-                const rawSign = s.rawDiff > 0 ? '+' : '';
-                const rawColor = s.rawDiff >= 0 ? 'text-success' : 'text-danger';
-                
-                return `
-                    <tr class="hover-row" onmouseenter="onHoverStudentRanking('${s.regNo}')" onmouseleave="onLeaveStudentRanking()">
-                        <td><span class="badge bg-danger">${idx + 1}</span></td>
-                        <td class="fw-bold">${s.class}</td>
-                        <td class="fw-bold text-dark">${s.name}</td>
-                        <td class="text-secondary fw-bold">${s.oldZ.toFixed(2)}</td>
-                        <td class="text-dark fw-bold">${s.newZ.toFixed(2)}</td>
-                        <td><span class="fw-bold text-danger">${s.zDiff.toFixed(2)}</span> ${getBadgeHTML(s.zDiff)}</td>
-                        <td>${s.oldRank} ➔ ${s.newRank} <small class="${rankColor} fw-bold">${rankText}</small></td>
-                        <td>${s.oldRaw.toFixed(1)}分 ➔ ${s.newRaw.toFixed(1)}分</td>
-                        <td class="${rawColor} fw-bold">${rawSign}${s.rawDiff.toFixed(1)}分</td>
-                    </tr>
-                `;
-            }).join('');
-            
-            // C. 基礎能力監測名單
-            document.getElementById('floorCountBadge').innerText = `${floorList.length} 人`;
-            const floorBody = document.getElementById('floorMonitoringBody');
-            floorList.sort((a,b) => a.newRaw - b.newRaw);
-            
-            if (floorList.length === 0) {
-                floorBody.innerHTML = '<tr><td colspan="8" class="text-center text-success py-3">🎉 太好了！全級無低於 35 分的地板學童。</td></tr>';
-            } else {
-                floorBody.innerHTML = floorList.map(s => {
-                    const rawSign = s.rawDiff > 0 ? '+' : '';
-                    const rawColor = s.rawDiff >= 0 ? 'text-success' : 'text-danger';
-                    let advice = '❌ 處於猜測盲區。建議由科任老師進行個別作答質性診斷。';
-                    if (s.rawDiff > 0) advice = '📈 原始分微幅回升，但仍處地板區。建議納入課後抽離補救小組加強。';
-                    else if (s.rawDiff < 0) advice = '⚠️ 分數與常模持續下滑。建議啟動第 3 層學業介入支援與心理關懷。';
+                subjects.forEach(sub => {
+                    const rowLabel = `${studentBaseLabel} (${sub.name})`;
+                    multiLabels.push(rowLabel);
                     
-                    return `
-                        <tr class="hover-row" onmouseenter="onHoverStudentRanking('${s.regNo}')" onmouseleave="onLeaveStudentRanking()">
-                            <td class="text-muted small">${s.regNo}</td>
-                            <td class="fw-bold">${s.class}</td>
-                            <td class="fw-bold text-dark">${s.name}</td>
-                            <td>${s.gender}</td>
-                            <td class="text-muted">${s.oldRaw.toFixed(1)}分</td>
-                            <td class="fw-bold text-danger">${s.newRaw.toFixed(1)}分</td>
-                            <td class="${rawColor} fw-bold">${rawSign}${s.rawDiff.toFixed(1)}分</td>
-                            <td class="text-start small text-dark">${advice}</td>
-                        </tr>
-                    `;
-                }).join('');
-            }
-        }
-        
-        window.onHoverStudentRanking = function(regNo) {
-            const student = rankingStudentsList.find(s => s.regNo === regNo);
-            if (student) renderRankingBellCurve(student);
-        };
-        
-        window.onLeaveStudentRanking = function() {
-            renderRankingBellCurve(null);
-        };
-        
-        // ==========================================
-        // 🧭 四象限散佈圖與分類名冊 (含穩健持平)
-        // ==========================================
-        window.renderQuadrantWithFilter = function() {
-            const subj = document.getElementById('subjectSelector').value;
-            const filterClass = document.getElementById('quadrantClassSelector').value;
-            const filterTicks = Array.from(document.querySelectorAll('#filter-chartQuadrant .micro-tick:checked')).map(el => el.value);
-            const trendMode = document.getElementById('quadrantTrendMode').checked;
-            renderQuadrantChart(subj, filterTicks, currentAnalysisResult.newCode, filterClass, trendMode);
-        };
-        
-        function renderQuadrantChart(subj, oldCodes, newCode, filterClass, trendMode) {
-            const students = currentAnalysisResult.students;
-            const scatterData = [];
-            const listLead = []; const listGrowth = []; const listDoubleDrop = []; const listWarning = []; const listFlat = [];
-            
-            students.forEach(s => {
-                if (filterClass !== 'all' && s.class !== filterClass) return;
-                const newZ = s.newScores.z[subj];
-                const oldZList = oldCodes.map(code => s.details[code]?.z[subj]).filter(v => v !== undefined && v !== null);
-                const oldZAvg = oldZList.length > 0 ? ss.mean(oldZList) : null;
-                
-                if (newZ !== null && oldZAvg !== null) {
-                    const xVal = oldZAvg;
-                    const yVal = newZ - oldZAvg;
-                    
-                    const item = {
-                        x: xVal, y: yVal, name: s.name, class: s.class, classNo: s.classNo, regNo: s.regNo, group: s.groupKey,
-                        oldRaw: s.oldScores.raw[subj], newRaw: s.newScores.raw[subj], rawDiff: s.newScores.raw[subj] - s.oldScores.raw[subj]
-                    };
-                    scatterData.push(item);
-                    
-                    if (Math.abs(yVal) <= 0.2) {
-                        listFlat.push(item);
-                    } else {
-                        if (xVal >= 0 && yVal > 0.2) listLead.push(item);
-                        else if (xVal < 0 && yVal > 0.2) listGrowth.push(item);
-                        else if (xVal < 0 && yVal < -0.2) listDoubleDrop.push(item);
-                        else if (xVal >= 0 && yVal < -0.2) listWarning.push(item);
-                    }
-                }
-            });
-            
-            const renderQuadTableList = (elId, list, isPositiveProgress = true) => {
-                const el = document.getElementById(elId);
-                list.sort((a, b) => isPositiveProgress ? b.y - a.y : a.y - b.y);
-                if (list.length === 0) { el.innerHTML = '<div class="text-muted p-1 text-center small">空</div>'; return; }
-                el.innerHTML = list.map(s => `
-                    <div class="d-flex justify-content-between hover-row p-1 border-bottom" onmouseenter="onHoverStudentRanking('${s.regNo}')" onmouseleave="onLeaveStudentRanking()">
-                        <span><b>${s.classNo}號</b> ${s.name} (${s.class})</span>
-                        <span class="fw-bold ${s.y >= 0 ? 'text-success' : 'text-danger'}">ΔZ: ${s.y >= 0 ? '+' : ''}${s.y.toFixed(2)}</span>
-                    </div>
-                `).join('');
-            };
-            renderQuadTableList('quadList_lead', listLead, true);
-            renderQuadTableList('quadList_growth', listGrowth, true);
-            renderQuadTableList('quadList_double_drop', listDoubleDrop, false);
-            renderQuadTableList('quadList_warning', listWarning, false);
-            renderQuadTableList('quadList_flat', listFlat, true);
-            
-            const annotations = {
-                lineX: { type: 'line', xMin: 0, xMax: 0, borderColor: '#cbd5e0', borderWidth: 1.5 },
-                lineY: { type: 'line', yMin: 0, yMax: 0, borderColor: '#cbd5e0', borderWidth: 1.5 },
-                flatUpper: { type: 'line', yMin: 0.2, yMax: 0.2, borderColor: '#cbd5e0', borderWidth: 1, borderDash: [3,3] },
-                flatLower: { type: 'line', yMin: -0.2, yMax: -0.2, borderColor: '#cbd5e0', borderWidth: 1, borderDash: [3,3] }
-            };
-            
-            if (trendMode) {
-                scatterData.forEach((d, i) => {
-                    annotations[`trend_arrow_${i}`] = {
-                        type: 'line',
-                        xMin: d.x, xMax: d.x,
-                        yMin: 0, yMax: d.y,
-                        borderColor: (d.x >= 0 && d.y > 0.2) ? 'rgba(25,135,84,0.6)' : (d.x < 0 && d.y > 0.2) ? 'rgba(217,119,6,0.6)' : (d.x < 0 && d.y < -0.2) ? 'rgba(220,53,69,0.6)' : 'rgba(107,114,128,0.4)',
-                        borderWidth: 2,
-                        arrowHeads: { end: { display: true, fill: true, length: 7, width: 7 } }
-                    };
-                });
-            }
-            
-            const isSingleClassSelected = filterClass !== 'all';
-            
-            if (chartInstances['chartQuadrant']) chartInstances['chartQuadrant'].destroy();
-            chartInstances['chartQuadrant'] = new Chart(document.getElementById('chartQuadrant').getContext('2d'), {
-                type: 'scatter',
-                data: {
-                    datasets: [{
-                        label: '學生分佈', data: scatterData,
-                        backgroundColor: scatterData.map(d => {
-                            if (trendMode) return 'rgba(0,0,0,0.15)';
-                            return (d.x >= 0 && d.y > 0.2) ? '#198754' : (d.x < 0 && d.y > 0.2) ? '#d97706' : (d.x < 0 && d.y < -0.2) ? '#dc3545' : (d.x >= 0 && d.y < -0.2) ? '#fd7e14' : '#cbd5e0';
-                        }),
-                        pointRadius: trendMode ? 4 : 6
-                    }]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    scales: {
-                        x: { title: { display: true, text: '基礎能力 (舊成績平均 Z-Score)' } },
-                        y: { title: { display: true, text: '學習動能 (Z-Score 相對進退步)' } }
-                    },
-                    plugins: {
-                        tooltip: { callbacks: { label: (c) => `${c.raw.classNo}號 ${c.raw.name}: 舊均:${c.raw.oldRaw.toFixed(1)}分 ➔ 新:${c.raw.newRaw.toFixed(1)}分 (ΔZ:${c.raw.y.toFixed(2)})` } },
-                        annotation: { annotations }
-                    }
-                },
-                plugins: [{
-                    id: 'classLabelPlugin',
-                    afterDatasetsDraw: (chart) => {
-                        if (!isSingleClassSelected) return;
-                        const ctx = chart.ctx;
-                        ctx.save();
-                        ctx.font = 'bold 10px sans-serif';
-                        ctx.fillStyle = '#2d3748';
-                        chart.data.datasets[0].data.forEach((d, idx) => {
-                            const meta = chart.getDatasetMeta(0);
-                            const pt = meta.data[idx];
-                            if (pt && !pt.skip) {
-                                ctx.fillText(d.name, pt.x + 8, pt.y + (idx % 3 - 1) * 6);
-                            }
-                        });
-                        ctx.restore();
-                    }
-                }]
-            });
-        }
-        
-        // ==========================================
-        // 🔍 經典啞鈴圖：中英數三行並排與自然班號排序
-        // ==========================================
-        function renderDetailDumbbellChart() {
-            const selGroup = document.getElementById('groupDetailSelector').value;
-            const sortVal = document.getElementById('sortSelector').value;
-            const checkedOld = Array.from(document.querySelectorAll('#filter-dumbbellChart .micro-tick:checked')).map(el => el.value);
-            
-            const allSubjectMode = document.getElementById('dumbbellSubjectAllMode').checked;
-            const currentMainSubj = document.getElementById('subjectSelector').value;
-            
-            let gStudents = currentAnalysisResult.students.filter(s => s.groupKey === selGroup);
-            
-            gStudents.sort((a, b) => a.classNo - b.classNo);
-            
-            if (sortVal === 'new_score_desc') {
-                gStudents.sort((a, b) => (b.newScores.raw[currentMainSubj] || 0) - (a.newScores.raw[currentMainSubj] || 0));
-            } else if (sortVal === 'old_score_desc') {
-                gStudents.sort((a, b) => (b.oldScores.raw[currentMainSubj] || 0) - (a.oldScores.raw[currentMainSubj] || 0));
-            } else if (sortVal === 'diff_desc') {
-                gStudents.sort((a, b) => {
-                    const diffA = (a.newScores.z[currentMainSubj] || 0) - (a.oldScores.z[currentMainSubj] || 0);
-                    const diffB = (b.newScores.z[currentMainSubj] || 0) - (b.oldScores.z[currentMainSubj] || 0);
-                    return diffB - diffA;
-                });
-            }
-            
-            const pad = (n) => String(n).padStart(2, '0');
-            const traces = [];
-            const annotations = [];
-            
-            if (!allSubjectMode) {
-                const subj = currentMainSubj;
-                const labels = gStudents.map(s => `${pad(s.classNo)}. ${s.name}`);
-                const oldRawList = [];
-                const newRawList = [];
-                
-                gStudents.forEach((s, idx) => {
-                    const newRaw = s.newScores.raw[subj];
-                    const oldList = checkedOld.map(code => s.details[code]?.raw[subj]).filter(v => v !== undefined && v !== null);
+                    const newRaw = s.newScores.raw[sub.key];
+                    const oldList = checkedOld.map(code => s.details[code]?.raw[sub.key]).filter(v => v !== undefined && v !== null);
                     const oldRawAvg = oldList.length > 0 ? ss.mean(oldList) : null;
                     
                     oldRawList.push(oldRawAvg);
                     newRawList.push(newRaw);
+                    markerColors.push(sub.color);
                     
                     if (newRaw !== null && oldRawAvg !== null) {
-                        const diff = (s.newScores.z[subj] || 0) - (s.oldScores.z[subj] || 0);
-                        const color = diff > 0.2 ? '#2ca02c' : diff < -0.2 ? '#d62728' : '#718096';
+                        const diff = (s.newScores.z[sub.key] || 0) - (s.oldScores.z[sub.key] || 0);
+                        const arrowColor = diff > 0.2 ? '#2ca02c' : diff < -0.2 ? '#d62728' : '#718096';
                         annotations.push({
-                            x: newRaw, y: labels[idx], ax: oldRawAvg, ay: labels[idx],
+                            x: newRaw, y: rowLabel, ax: oldRawAvg, ay: rowLabel,
                             xref: 'x', yref: 'y', axref: 'x', ayref: 'y',
-                            showarrow: true, arrowhead: 2, arrowsize: 1, arrowwidth: 2, arrowcolor: color
+                            showarrow: true, arrowhead: 2, arrowsize: 1, arrowwidth: 1.5, arrowcolor: arrowColor
                         });
                         annotations.push({
-                            x: Math.max(oldRawAvg, newRaw) + 2.5, y: labels[idx], xref: 'x', yref: 'y',
-                            text: `${newRaw.toFixed(0)}分 (${diff >= 0 ? '+' : ''}${diff.toFixed(2)})`,
-                            showarrow: false, font: { color: color, size: 10, weight: 'bold' }, xanchor: 'left'
+                            x: Math.max(oldRawAvg, newRaw) + 2.2, y: rowLabel, xref: 'x', yref: 'y',
+                            text: `${newRaw.toFixed(0)}分 (ΔZ:${diff >= 0 ? '+' : ''}${diff.toFixed(2)})`,
+                            showarrow: false, font: { color: sub.color, size: 9, weight: 'bold' }, xanchor: 'left'
                         });
                     }
                 });
-                
-                traces.push({ x: oldRawList, y: labels, mode: 'markers', marker: { color: '#cbd5e0', size: 10 }, name: '舊成績平均' });
-                traces.push({ x: newRawList, y: labels, mode: 'markers', marker: { color: '#198754', size: 12 }, name: '新成績' });
-                
-            } else {
-                const multiLabels = [];
-                const oldRawList = [];
-                const newRawList = [];
-                const markerColors = [];
-                
-                gStudents.forEach(s => {
-                    const studentBaseLabel = `${pad(s.classNo)}. ${s.name}`;
-                    const subjects = [
-                        { key: 'chi_read', name: '中', color: '#1f77b4' },
-                        { key: 'eng_read', name: '英', color: '#ff7f0e' },
-                        { key: 'math',     name: '數', color: '#2ca02c' }
-                    ];
-                    
-                    subjects.forEach(sub => {
-                        const rowLabel = `${studentBaseLabel} (${sub.name})`;
-                        multiLabels.push(rowLabel);
-                        
-                        const newRaw = s.newScores.raw[sub.key];
-                        const oldList = checkedOld.map(code => s.details[code]?.raw[sub.key]).filter(v => v !== undefined && v !== null);
-                        const oldRawAvg = oldList.length > 0 ? ss.mean(oldList) : null;
-                        
-                        oldRawList.push(oldRawAvg);
-                        newRawList.push(newRaw);
-                        markerColors.push(sub.color);
-                        
-                        if (newRaw !== null && oldRawAvg !== null) {
-                            const diff = (s.newScores.z[sub.key] || 0) - (s.oldScores.z[sub.key] || 0);
-                            const arrowColor = diff > 0.2 ? '#2ca02c' : diff < -0.2 ? '#d62728' : '#718096';
-                            annotations.push({
-                                x: newRaw, y: rowLabel, ax: oldRawAvg, ay: rowLabel,
-                                xref: 'x', yref: 'y', axref: 'x', ayref: 'y',
-                                showarrow: true, arrowhead: 2, arrowsize: 1, arrowwidth: 1.5, arrowcolor: arrowColor
-                            });
-                            annotations.push({
-                                x: Math.max(oldRawAvg, newRaw) + 2.2, y: rowLabel, xref: 'x', yref: 'y',
-                                text: `${newRaw.toFixed(0)}分 (ΔZ:${diff >= 0 ? '+' : ''}${diff.toFixed(2)})`,
-                                showarrow: false, font: { color: sub.color, size: 9, weight: 'bold' }, xanchor: 'left'
-                            });
-                        }
-                    });
-                });
-                
-                traces.push({ x: oldRawList, y: multiLabels, mode: 'markers', marker: { color: '#cbd5e0', size: 8 }, name: '歷史舊平均' });
-                traces.push({ x: newRawList, y: multiLabels, mode: 'markers', marker: { color: markerColors, size: 10 }, name: '最新成績' });
-            }
-            
-            const subj = currentMainSubj;
-            const newStats = currentAnalysisResult.statsMap[currentAnalysisResult.newCode][subj];
-            const newGradeMean = newStats ? newStats.mean : 50;
-            
-            const oldMeans = [];
-            checkedOld.forEach(c => {
-                if (currentAnalysisResult.statsMap[c] && currentAnalysisResult.statsMap[c][subj]) {
-                    oldMeans.push(currentAnalysisResult.statsMap[c][subj].mean);
-                }
-            });
-            const oldGradeMean = oldMeans.length > 0 ? ss.mean(oldMeans) : 50;
-            
-            annotations.push({
-                x: oldGradeMean, y: 1.02, xref: 'x', yref: 'paper',
-                text: `舊全級均分: ${oldGradeMean.toFixed(1)}分`,
-                showarrow: false, font: { color: '#4a5568', size: 11, weight: 'bold' }, xanchor: 'center'
-            });
-            annotations.push({
-                x: newGradeMean, y: 1.08, xref: 'x', yref: 'paper',
-                text: `新全級均分: ${newGradeMean.toFixed(1)}分`,
-                showarrow: false, font: { color: '#dc3545', size: 11, weight: 'bold' }, xanchor: 'center'
             });
             
-            const computedHeight = allSubjectMode ? (gStudents.length * 75) : (gStudents.length * 35);
-            
-            const layout = {
-                title: allSubjectMode ? `群組 [${selGroup}] 中英數三學科並排啞鈴圖` : `群組 [${selGroup}] 學生個人成長分析`,
-                height: Math.max(420, computedHeight),
-                xaxis: { title: '原始分數 (分)', range: [0, 105], gridcolor: '#edf2f7' },
-                yaxis: { autorange: 'reversed', gridcolor: '#f7fafc', tickfont: { size: allSubjectMode ? 9 : 11 } },
-                shapes: [
-                    { type: 'line', x0: oldGradeMean, x1: oldGradeMean, y0: 0, y1: 1, xref: 'x', yref: 'paper', line: { color: '#cbd5e0', width: 2, dash: 'dot' } },
-                    { type: 'line', x0: newGradeMean, x1: newGradeMean, y0: 0, y1: 1, xref: 'x', yref: 'paper', line: { color: 'rgba(220, 53, 69, 0.8)', width: 2, dash: 'dash' } }
-                ],
-                annotations: annotations, showlegend: false, margin: { l: 150, r: 80, t: 50, b: 50 },
-                plot_bgcolor: '#ffffff', paper_bgcolor: '#ffffff'
-            };
-            Plotly.newPlot('chartDetailRawScore', traces, layout, { displayModeBar: false });
+            traces.push({ x: oldRawList, y: multiLabels, mode: 'markers', marker: { color: '#cbd5e0', size: 8 }, name: '歷史舊平均' });
+            traces.push({ x: newRawList, y: multiLabels, mode: 'markers', marker: { color: markerColors, size: 10 }, name: '最新成績' });
         }
         
-        // ==========================================
-        // 🛠️ 輔助工具：白底匯出與狀態提示
-        // ==========================================
-        const showStatus = (message, type = 'info') => {
-            const statusEl = document.getElementById('status');
-            statusEl.style.display = 'block'; statusEl.textContent = message;
-            statusEl.className = `alert alert-${type} text-center`;
-        };
+        const subj = currentMainSubj;
+        const newStats = currentAnalysisResult.statsMap[currentAnalysisResult.newCodes[0]][subj]; // 以第一個新評估考次作參考均值
+        const newGradeMean = newStats ? newStats.mean : 50;
         
-        window.downloadChart = function(canvasId) {
-            const canvas = document.getElementById(canvasId);
-            if (!canvas) return;
-            const tempCanvas = document.createElement('canvas');
-            tempCanvas.width = canvas.width;
-            tempCanvas.height = canvas.height;
-            const ctx = tempCanvas.getContext('2d');
-            
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-            ctx.drawImage(canvas, 0, 0);
-            
-            const link = document.createElement('a');
-            link.download = `${canvasId}_export.png`;
-            link.href = tempCanvas.toDataURL('image/png', 1.0);
-            link.click();
-        };
+        const oldMeans = [];
+        checkedOld.forEach(c => {
+            if (currentAnalysisResult.statsMap[c] && currentAnalysisResult.statsMap[c][subj]) {
+                oldMeans.push(currentAnalysisResult.statsMap[c][subj].mean);
+            }
+        });
+        const oldGradeMean = oldMeans.length > 0 ? ss.mean(oldMeans) : 50;
         
-        window.downloadPlotlyChart = function(divId, filename) {
-            const el = document.getElementById(divId);
-            if (!el) return;
-            Plotly.downloadImage(el, { format: 'png', width: 1200, height: 500, filename: filename });
-        };
-        </script>
-        </body>
-        </html>
+        annotations.push({
+            x: oldGradeMean, y: 1.02, xref: 'x', yref: 'paper',
+            text: `舊全級均分: ${oldGradeMean.toFixed(1)}分`,
+            showarrow: false, font: { color: '#4a5568', size: 11, weight: 'bold' }, xanchor: 'center'
+        });
+        annotations.push({
+            x: newGradeMean, y: 1.08, xref: 'x', yref: 'paper',
+            text: `新全級均分: ${newGradeMean.toFixed(1)}分`,
+            showarrow: false, font: { color: '#dc3545', size: 11, weight: 'bold' }, xanchor: 'center'
+        });
         
+        const computedHeight = allSubjectMode ? (gStudents.length * 75) : (gStudents.length * 35);
+        
+        const layout = {
+            title: allSubjectMode ? `群組 [${selGroup}] 中英數三學科並排啞鈴圖` : `群組 [${selGroup}] 學生個人成長分析`,
+            height: Math.max(420, computedHeight),
+            xaxis: { title: '原始分數 (分)', range: [0, 105], gridcolor: '#edf2f7' },
+            yaxis: { autorange: 'reversed', gridcolor: '#f7fafc', tickfont: { size: allSubjectMode ? 9 : 11 } },
+            shapes: [
+                { type: 'line', x0: oldGradeMean, x1: oldGradeMean, y0: 0, y1: 1, xref: 'x', yref: 'paper', line: { color: '#cbd5e0', width: 2, dash: 'dot' } },
+                { type: 'line', x0: newGradeMean, x1: newGradeMean, y0: 0, y1: 1, xref: 'x', yref: 'paper', line: { color: 'rgba(220, 53, 69, 0.8)', width: 2, dash: 'dash' } }
+            ],
+            annotations: annotations, showlegend: false, margin: { l: 150, r: 80, t: 50, b: 50 },
+            plot_bgcolor: '#ffffff', paper_bgcolor: '#ffffff'
+        };
+        Plotly.newPlot('chartDetailRawScore', traces, layout, { displayModeBar: false });
+    }
+    
+    // ==========================================
+    // 🛠️ 輔助工具：白底匯出與狀態提示
+    // ==========================================
+    const showStatus = (message, type = 'info') => {
+        const statusEl = document.getElementById('status');
+        statusEl.style.display = 'block'; statusEl.textContent = message;
+        statusEl.className = `alert alert-${type} text-center`;
+    };
+    
+    window.downloadChart = function(canvasId) {
+        const canvas = document.getElementById(canvasId);
+        if (!canvas) return;
+        const tempCanvas = document.createElement('canvas');
+        tempCanvas.width = canvas.width;
+        tempCanvas.height = canvas.height;
+        const ctx = tempCanvas.getContext('2d');
+        
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+        ctx.drawImage(canvas, 0, 0);
+        
+        const link = document.createElement('a');
+        link.download = `${canvasId}_export.png`;
+        link.href = tempCanvas.toDataURL('image/png', 1.0);
+        link.click();
+    };
+    
+    window.downloadPlotlyChart = function(divId, filename) {
+        const el = document.getElementById(divId);
+        if (!el) return;
+        Plotly.downloadImage(el, { format: 'png', width: 1200, height: 500, filename: filename });
+    };
+    </script>
+    </body>
+    </html>
+    
