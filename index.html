@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>跨年度學籍 Z-Score 智慧多維分析系統 (v24.0 - 終極大數據旗艦版)</title>
+    <title>跨年度學籍 Z-Score 智慧多維分析系統 (v24.1 - 雲端分析存取版)</title>
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Chart.js & Plugins -->
@@ -93,7 +93,7 @@
         <div></div>
         <div class="text-center">
             <h1 class="fw-bold text-primary mb-1">📊 跨年度 Z-Score 智慧多維分析系統</h1>
-            <p class="text-muted mb-0">v24.0 - 常模雙向多選、橫向常模鐘形、性別交叉對照版</p>
+            <p class="text-muted mb-0">v24.1 - 常模雙向多選、橫向常模鐘形、性別交叉對照版</p>
         </div>
         <div class="text-end">
             <span id="user-role-badge" class="badge me-2"></span>
@@ -205,12 +205,10 @@
         </div>
         <div class="card-body bg-white">
             <div class="row g-3">
-                <!-- 🌟 應您指示：舊成績與新成績旁在教師角色登入時會動態亮起 "🔒 唯讀鎖定" [2] -->
                 <div class="col-md-5 border-end">
                     <h6 class="fw-bold text-danger">🔙 選擇舊成績 (可多選) <span id="oldLockBadge" style="display:none;" class="locked-badge">🔒 唯讀鎖定</span></h6>
                     <div id="oldScoreCheckboxes" class="d-flex flex-wrap gap-2 py-2"></div>
                 </div>
-                <!-- 🌟 應您指示：新成績改為 Checkbox (可多選) 複選框 [1] -->
                 <div class="col-md-4 border-end">
                     <h6 class="fw-bold text-success">🔜 選擇新成績 (可多選) <span id="newLockBadge" style="display:none;" class="locked-badge">🔒 唯讀鎖定</span></h6>
                     <div id="newScoreRadioGroup" class="d-flex flex-wrap gap-2 py-2"></div>
@@ -282,10 +280,11 @@
                                     <div id="stat_disc_label" class="badge bg-secondary small mt-1">-</div>
                                 </div>
                             </div>
+                            <!-- 🌟 在此修復最高低分排版 -->
                             <div class="col-4">
                                 <div class="stat-card">
                                     <div class="small text-muted">全級最高分 / 最低分</div>
-                                    <div id="stat_minmax" class="fs-5 fw-bold text-dark mt-1" style="height: 38px; display: flex; align-items: center; justify-content: center;">-</div>
+                                    <div id="stat_minmax" class="fs-5 fw-bold text-dark mt-1" style="height: 38px; display: flex; align-items: center; justify-content: center; flex-wrap: wrap;">-</div>
                                 </div>
                             </div>
                         </div>
@@ -363,7 +362,6 @@
             </div>
         </div>
 
-<!-- ==================== 第 1 部分結束：請接續貼上第 2 部分的 HTML 結構 ==================== -->
         <!-- 第三部分：跨多個評估均分走勢折線圖 -->
         <div class="card shadow-sm mb-4">
             <div class="card-header bg-white d-flex justify-content-between align-items-center">
@@ -378,7 +376,7 @@
             </div>
         </div>
 
-        <!-- 🌟 應您指示調整排版：將「全級常模鐘形曲線位置連動圖」拉橫、全寬展示，放置在折線圖正下方 [3] -->
+        <!-- 第四部分：全級正態常模鐘形曲線位置 -->
         <div class="card shadow-sm mb-4 border-start border-dark border-4">
             <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
                 <span>第四部分：🔔 全級正態常模鐘形曲線位置</span>
@@ -388,11 +386,9 @@
                 <div id="bellStudentIndicator" class="alert alert-secondary p-2 mb-2 text-center fw-bold small">
                     👉 請將滑鼠移動至下方排行榜或地板監測名單中任一學生列，圖表將即時繪製該生的常模躍遷軌跡！
                 </div>
-                <!-- 拉橫全寬展示，高度定為 230px 保持精緻緊湊 -->
                 <div style="position: relative; height: 230px; width: 100%;">
                     <canvas id="chartRankingBell"></canvas>
                 </div>
-                <!-- 🌟 程度尺規：順序已調整為從左側「斷崖式失守」一路遞增到右側「突破性躍進」 [2] -->
                 <div class="scale-bar-container" id="bellScaleBar">
                     <div class="scale-badge" style="background-color: #e53e3e;" data-badge="crash_down">斷崖式失守<span class="scale-range">ΔZ &le; -0.8</span></div>
                     <div class="scale-badge" style="background-color: #dd6b20;" data-badge="sig_down">顯著滑落<span class="scale-range">-0.8 &lt; ΔZ &le; -0.5</span></div>
@@ -489,7 +485,7 @@
             </div>
         </div>
 
-        <!-- 📊 第五部分：學生學習狀態四象限分佈圖 & 右側分類名冊 (已完全刪除趨勢向量模式，並更新色彩) [4, 5] -->
+        <!-- 📊 第五部分：學生學習狀態四象限分佈圖 & 右側分類名冊 -->
         <div class="row g-4 mb-4">
             <div class="col-lg-7">
                 <div class="card h-100 shadow-sm border-start border-info border-4">
@@ -507,7 +503,7 @@
                     </div>
                 </div>
             </div>
-            <!-- 右側四象限分類名冊 (配合班別篩選，且最底包含穩健持平，更新色彩) [3, 5] -->
+            <!-- 右側四象限分類名冊 -->
             <div class="col-lg-5">
                 <div class="card h-100 shadow-sm border-start border-secondary border-4">
                     <div class="card-header bg-secondary text-white fw-bold">📋 學生學習狀態四象限名冊 (配合班別篩選)</div>
@@ -519,7 +515,6 @@
                                     <div id="quadList_lead" class="small"></div>
                                 </div>
                             </div>
-                            <!-- 🌟 應您指示：逆勢成長 (第二象限) 改成「🔵藍色」 [5] -->
                             <div class="col-6">
                                 <div class="quadrant-box">
                                     <div class="quadrant-title text-primary border-primary">🔵 逆勢成長 (第二象限)</div>
@@ -532,7 +527,6 @@
                                     <div id="quadList_double_drop" class="small"></div>
                                 </div>
                             </div>
-                            <!-- 🌟 應您指示：警訊高分 (第四象限) 改成「🟡黃色」 [5] -->
                             <div class="col-6">
                                 <div class="quadrant-box" style="border-color: #d69e2e !important;">
                                     <div class="quadrant-title text-warning border-warning" style="color: #d69e2e !important; border-bottom-color: #d69e2e !important;">🟡 警訊高分 (第四象限)</div>
@@ -551,7 +545,7 @@
             </div>
         </div>
 
-        <!-- 第四部分：學生成績詳細分析 (經典模式啞鈴圖，支援中英數三行並排與自然班號排序) [4] -->
+        <!-- 第六部分：學生成績詳細分析 (經典模式啞鈴圖) -->
         <div class="card shadow-sm mb-4">
             <div class="card-header bg-white">
                 <div class="d-flex justify-content-between align-items-center flex-wrap g-2">
@@ -593,16 +587,14 @@
     const ADMIN_EMAIL = "lwysams@bcklas.edu.hk";
     const RESTRICTED_TEACHER_EMAIL = "class01@bcklas.edu.hk";
     
-    // 🔒 教師帳戶規定的鎖定條件
+    // 🔒 教師帳戶規定的鎖定條件 (取消強制預設成績限制，改由雲端統一讀取)
     const TEACHER_RESTRICTIONS = {
-        schoolYear: "26",
-        oldScores: ["25_P1T2A2"],
-        newScores: ["26_P2T1A1"] // 支援新成績多選鎖定
+        schoolYear: "26"
     };
     
     let cohortAssessments = [];
     let activeOldAssess = [];
-    let activeNewAssess = []; // 升級為陣列，支援多選新成績 [1]
+    let activeNewAssess = []; 
     let chartInstances = {};
     let parsedTempRegistryRows = null;
     let parsedTempScoreRows = null;
@@ -636,24 +628,23 @@
                     document.getElementById('uploadSection').style.display = 'block';
                     document.getElementById('selectSchoolYear').disabled = false;
                     document.getElementById('selectGrade').disabled = false;
+                    document.getElementById('analysisControlCard').style.display = 'block';
                     document.getElementById('yearLockTag').style.display = 'none';
                     document.getElementById('oldLockBadge').style.display = 'none';
                     document.getElementById('newLockBadge').style.display = 'none';
                     updateGradeDropdown();
                 } else if (userEmail === RESTRICTED_TEACHER_EMAIL.toLowerCase()) {
-                    // 🔒 Class01：學年唯讀，年級解鎖，分析控制台亮起 "🔒 唯讀鎖定" 橘色標籤 [1, 2]
+                    // 🔒 Teacher：學年唯讀，年級解鎖，並隱藏分析控制台(改為自動從雲端載入)
                     currentUserRole = 'restricted_teacher';
                     document.getElementById('user-role-badge').innerText = '教師 ( Class01 )';
                     document.getElementById('user-role-badge').className = 'badge bg-warning text-dark';
                     document.getElementById('uploadSection').style.display = 'none';
+                    document.getElementById('analysisControlCard').style.display = 'none'; // 教師不需設定，直接看雲端結果
                     
                     document.getElementById('selectSchoolYear').value = TEACHER_RESTRICTIONS.schoolYear;
                     document.getElementById('selectSchoolYear').disabled = true;
                     document.getElementById('yearLockTag').style.display = 'inline-block';
-                    document.getElementById('selectGrade').disabled = false; // 年級完全解鎖 [1]
-                    
-                    document.getElementById('oldLockBadge').style.display = 'inline-block';
-                    document.getElementById('newLockBadge').style.display = 'inline-block';
+                    document.getElementById('selectGrade').disabled = false; 
                     
                     updateGradeDropdown();
                 } else {
@@ -718,14 +709,48 @@
     }
     
     async function onCohortChanged() {
-        const year = parseInt(document.getElementById('selectSchoolYear').value);
+        const year = document.getElementById('selectSchoolYear').value;
         const grade = document.getElementById('selectGrade').value;
         const gradeNum = parseInt(grade.replace('P', ''));
-        const cohortEntranceYear = year - gradeNum + 1;
+        const cohortEntranceYear = parseInt(year) - gradeNum + 1;
         
         document.getElementById('cohortStatusLabel').innerText = `ℹ️ 追蹤學童：${cohortEntranceYear} 年入學的同屆學生`;
-        showStatus(`⏳ 正在讀取 ${cohortEntranceYear} 年入學之歷年成績...`, 'warning');
+
+        // 🌟 Teacher Role: 直接從雲端抓取分析好的資料並顯示圖表
+        if (currentUserRole === 'restricted_teacher') {
+            const analysisDocId = `${year}_${grade}_Analysis`;
+            showStatus(`⏳ 正在從雲端讀取 ${year}學年 ${grade} 的分析圖表...`, 'warning');
+            
+            try {
+                const docSnap = await window.getDoc(window.doc(window.db, "AnalysisResults_v2", analysisDocId));
+                if (docSnap.exists()) {
+                    currentAnalysisResult = docSnap.data().result;
+                    document.getElementById('analysisSection').style.display = 'block';
+                    
+                    const groupSel = document.getElementById('groupDetailSelector');
+                    groupSel.innerHTML = '';
+                    currentAnalysisResult.groupList.forEach(g => groupSel.add(new Option(g, g)));
+                    
+                    const quadClassSel = document.getElementById('quadrantClassSelector');
+                    quadClassSel.innerHTML = '<option value="all">--顯示全級學童--</option>';
+                    const distinctClasses = [...new Set(currentAnalysisResult.students.map(s => s.class))].sort();
+                    distinctClasses.forEach(c => quadClassSel.add(new Option(c, c)));
+                    
+                    buildIndependentFilters();
+                    redrawAllCharts();
+                    showStatus("✅ 成功載入雲端分析圖表！", "success");
+                } else {
+                    document.getElementById('analysisSection').style.display = 'none';
+                    showStatus("ℹ️ 尚未有該年級的雲端分析結果，請聯絡管理員先進行分析與儲存。", "secondary");
+                }
+            } catch (err) {
+                showStatus(`❌ 讀取雲端分析結果失敗: ${err.message}`, "danger");
+            }
+            return;
+        }
         
+        // Admin Role: 撈取成績清單供自訂分析
+        showStatus(`⏳ 正在讀取 ${cohortEntranceYear} 年入學之歷年成績...`, 'warning');
         try {
             const querySnapshot = await window.getDocs(window.collection(window.db, "CrossYearScores_v2"));
             cohortAssessments = [];
@@ -739,29 +764,6 @@
                 }
             });
             renderAssessmentCheckboxes();
-            
-            // 🔒 若為 Class01，自動勾選該年級對應評估並啟動分析 [1]
-            if (currentUserRole === 'restricted_teacher') {
-                document.querySelectorAll('input[name="globalOld"]').forEach(el => {
-                    el.checked = el.value.includes('T2A2');
-                    el.disabled = true;
-                });
-                document.querySelectorAll('input[name="globalNew"]').forEach(el => {
-                    el.checked = el.value.includes('T1A1');
-                    el.disabled = true;
-                });
-                
-                setTimeout(() => {
-                    const checkedOld = Array.from(document.querySelectorAll('input[name="globalOld"]:checked')).map(el => el.value);
-                    const checkedNew = Array.from(document.querySelectorAll('input[name="globalNew"]:checked')).map(el => el.value);
-                    if (checkedNew.length > 0 && checkedOld.length > 0) {
-                        activeOldAssess = checkedOld;
-                        activeNewAssess = checkedNew;
-                        performCalculation(activeOldAssess, activeNewAssess, ['class']);
-                    }
-                }, 300);
-            }
-            
             if (cohortAssessments.length > 0) {
                 showStatus(`✅ 成功撈取到 ${cohortAssessments.length} 次同屆相關評估紀錄。`, 'success');
             } else {
@@ -793,7 +795,6 @@
             `;
             oldContainer.appendChild(divOld);
             
-            // 🌟 新成績升級為 Checkbox 多選樣式 [1]
             const divNew = document.createElement('div');
             divNew.className = 'form-check form-check-inline';
             divNew.innerHTML = `
@@ -1005,9 +1006,8 @@
             showStatus(`❌ 儲存成績單失敗: ${err.message}`, "danger");
         }
     };
-    
     // ==========================================
-    // 📊 多維分析與雙向多選 Z-Score 運算引擎 [1]
+    // 📊 多維分析與雙向多選 Z-Score 運算引擎
     // ==========================================
     window.triggerMainAnalysis = function() {
         const checkedOld = Array.from(document.querySelectorAll('input[name="globalOld"]:checked')).map(el => el.value);
@@ -1018,13 +1018,13 @@
         
         const selectedDims = Array.from(document.querySelectorAll('.group-dimension:checked')).map(el => el.value);
         activeOldAssess = checkedOld;
-        activeNewAssess = checkedNew; // 雙向多選陣列儲存 [1]
+        activeNewAssess = checkedNew; 
         performCalculation(activeOldAssess, activeNewAssess, selectedDims);
     };
     
     function performCalculation(oldCodes, newCodes, selectedDims) {
         showStatus("⏳ 正在進行雙向多選常模標準化與試卷品質診斷...", "warning");
-        const year = parseInt(document.getElementById('selectSchoolYear').value);
+        const year = document.getElementById('selectSchoolYear').value;
         const grade = document.getElementById('selectGrade').value;
         const registryDocId = `${year}_${grade}_Registry`;
         
@@ -1032,17 +1032,14 @@
             let currentRegistry = {};
             if (regSnap.exists()) currentRegistry = regSnap.data().registry;
             
-            // 提取並驗證所有選取的新/舊成績對象 [1]
             const newAssessObjs = cohortAssessments.filter(a => newCodes.includes(a.code));
             const oldAssessObjs = cohortAssessments.filter(a => oldCodes.includes(a.code));
             
             if (newAssessObjs.length === 0) { showStatus("❌ 找不到選取的新成績資料", "danger"); return; }
             
-            // 以選取的「第一個新成績」為核心學籍底冊名單 (排除離校生)
             const baseStudents = newAssessObjs[0].students;
             const baseRegs = new Set(baseStudents.map(s => s.regNo));
             
-            // 建立所有相關評估點的統計字典 (Mean, SD)
             const statsMap = {};
             const allInvolved = [...newAssessObjs, ...oldAssessObjs];
             allInvolved.forEach(assess => {
@@ -1081,12 +1078,10 @@
                 };
             });
             
-            // 核心 Z-Score 計算 (多選新/舊成績採 Z-Score 智慧加總平均法) [1]
             ['chi_read', 'chi_dict', 'eng_read', 'eng_dict', 'math'].forEach(subj => {
                 Object.keys(analyzedStudents).forEach(regNo => {
                     const stu = analyzedStudents[regNo];
                     
-                    // A. 新成績多點計算與平均 [1]
                     const newRawList = []; const newZList = [];
                     newAssessObjs.forEach(newAssess => {
                         const rec = newAssess.students.find(s => s.regNo === regNo);
@@ -1105,7 +1100,6 @@
                     stu.newScores.raw[subj] = newRawList.length > 0 ? ss.mean(newRawList) : null;
                     stu.newScores.z[subj] = newZList.length > 0 ? ss.mean(newZList) : null;
                     
-                    // B. 舊成績多點計算與平均
                     const oldRawList = []; const oldZList = [];
                     oldAssessObjs.forEach(oldAssess => {
                         const rec = oldAssess.students.find(s => s.regNo === regNo);
@@ -1132,10 +1126,20 @@
                 groupList: uniqueGroups,
                 statsMap: statsMap,
                 oldCodes: oldCodes,
-                newCodes: newCodes // 升級為多選陣列儲存 [1]
+                newCodes: newCodes
             };
             
-            // 介面選擇控制連動
+            // 🌟 管理員儲存分析結果至雲端
+            const analysisDocId = `${year}_${grade}_Analysis`;
+            window.setDoc(window.doc(window.db, "AnalysisResults_v2", analysisDocId), {
+                lastUpdated: new Date().toISOString(),
+                result: currentAnalysisResult
+            }).then(() => {
+                showStatus("✅ 雙向多選分析與信度診斷成功！(已同步至雲端供教師存取)", "success");
+            }).catch(err => {
+                showStatus(`⚠️ 分析成功，但儲存至雲端失敗: ${err.message}`, "warning");
+            });
+
             document.getElementById('analysisSection').style.display = 'block';
             const groupSel = document.getElementById('groupDetailSelector');
             groupSel.innerHTML = '';
@@ -1148,7 +1152,6 @@
             
             buildIndependentFilters();
             redrawAllCharts();
-            showStatus("✅ 雙向多選分析與信度診斷成功！", "success");
         }).catch(err => {
             showStatus(`❌ 讀取官方年度名冊發生錯誤: ${err.message}`, 'danger');
         });
@@ -1180,7 +1183,7 @@
         });
     }
     
-    function onMicroFilterChanged(panelId) {
+    window.onMicroFilterChanged = function(panelId) {
         const subj = document.getElementById('subjectSelector').value;
         const checkedTicks = Array.from(document.querySelectorAll(`#${panelId} .micro-tick:checked`)).map(el => el.value);
         const baseNewList = currentAnalysisResult.newCodes;
@@ -1190,11 +1193,11 @@
         else if (panelId === 'filter-chartClassRawLine') renderClassRawTrendLine(subj, checkedTicks, baseNewList);
         else if (panelId === 'filter-chartQuadrant') renderQuadrantChart(subj, checkedTicks, baseNewList, document.getElementById('quadrantClassSelector').value);
         else if (panelId === 'filter-dumbbellChart') renderDetailDumbbellChart();
-    }
+    };
     
+    // 🌟 在 runEbelTestDiagnostics 更新排版 (將 <br> 替換成 span 容器對齊)
     function runEbelTestDiagnostics(subj, newCodes) {
         const students = currentAnalysisResult.students;
-        // 使用多選新成績平均原始分作為品質診斷母體 [1]
         const scores = students.map(s => s.newScores.raw[subj]).filter(v => v !== null && !isNaN(v));
         if (scores.length === 0) return;
         
@@ -1220,10 +1223,14 @@
         else if (discrimination >= 0.20) { discLabel.innerText = "鑑別度一般"; discLabel.className = "badge bg-warning"; }
         else { discLabel.innerText = "❌ 缺乏鑑別度"; discLabel.className = "badge bg-danger"; }
         
-        document.getElementById('stat_minmax').innerHTML = `最高: <span class="text-success">${ss.max(scores).toFixed(0)}分</span><br>最低: <span class="text-danger">${ss.min(scores).toFixed(0)}分</span>`;
+        // 🌟 修正排版對齊
+        document.getElementById('stat_minmax').innerHTML = `
+            <span class="me-3">最高: <span class="text-success">${ss.max(scores).toFixed(0)}分</span></span>
+            <span>最低: <span class="text-danger">${ss.min(scores).toFixed(0)}分</span></span>
+        `;
     }
     
-    function redrawAllCharts() {
+    window.redrawAllCharts = function() {
         const subj = document.getElementById('subjectSelector').value;
         const oldCodes = currentAnalysisResult.oldCodes;
         const newCodes = currentAnalysisResult.newCodes;
@@ -1233,14 +1240,14 @@
         
         renderImproveRegressChart(subj, oldCodes, newCodes);
         renderTwoPointTrendChart(subj, oldCodes, newCodes);
-        renderDistributionChart(subj, newCodes[0]); // 基於最新考次
+        renderDistributionChart(subj, newCodes[0]); 
         renderClassRawTrendLine(subj, oldCodes, newCodes);
         renderQuadrantWithFilter();
         renderDetailDumbbellChart();
         renderMultiSubjectAttentionTable();
         renderTop20ProgressRegression(subj, oldCodes, newCodes);
         renderRankingBellCurve(null);
-    }
+    };
     
     function calculateGradeAvgDiff(subj, oldCodes, newCodes) {
         const students = currentAnalysisResult.students;
@@ -1259,9 +1266,6 @@
         }
     }
     
-    // ==========================================
-    // 📈 圖表渲染：進退步與兩點平均分走勢
-    // ==========================================
     function renderImproveRegressChart(subj, oldCodes, newCodes) {
         const students = currentAnalysisResult.students;
         const groups = currentAnalysisResult.groupList;
@@ -1451,7 +1455,7 @@
     function renderClassRawTrendLine(subj, oldCodes, newCodes) {
         const students = currentAnalysisResult.students;
         const groups = currentAnalysisResult.groupList;
-        const timeline = [...oldCodes, ...newCodes].sort(); // 跨所有歷史點走勢
+        const timeline = [...oldCodes, ...newCodes].sort(); 
         const datasets = [];
         const colors = ['#3182ce', '#dd6b20', '#319795', '#805ad5', '#e53e3e', '#d69e2e', '#4a5568'];
         
@@ -1493,9 +1497,6 @@
         });
     }
     
-    // ==========================================
-    // 🔔 常態連動鐘形圖與 Canvas 大箭頭標註引擎 [2]
-    // ==========================================
     function renderRankingBellCurve(activeStudent = null) {
         const canvas = document.getElementById('chartRankingBell');
         if (!canvas) return;
@@ -1589,7 +1590,6 @@
         
         if (chartInstances['chartRankingBell']) chartInstances['chartRankingBell'].destroy();
         
-        // Canvas 二次路徑實體大箭頭繪圖外掛 (完美相容全寬圖表) [2, 3]
         const arrowDrawPlugin = {
             id: 'arrowDrawPlugin',
             afterDraw: (chart) => {
@@ -1658,9 +1658,6 @@
         });
     }
     
-    // ==========================================
-    // 🚀 雙排行榜與基礎能力監測名冊
-    // ==========================================
     function renderTop20ProgressRegression(subj, oldCodes, newCodes) {
         const students = currentAnalysisResult.students;
         const list = [];
@@ -1724,7 +1721,6 @@
             return `<span class="badge" style="background-color:#718096 !important; color:white;">⚖️ 穩健持平</span>`;
         };
         
-        // A. 卓越進步排行榜
         normalList.sort((a,b) => b.zDiff - a.zDiff);
         const top20 = normalList.slice(0, 20);
         const progressBody = document.getElementById('rankingProgressBody');
@@ -1735,7 +1731,7 @@
             const rawColor = s.rawDiff >= 0 ? 'text-success' : 'text-danger';
             
             return `
-                <tr class="hover-row" onmouseenter="onHoverStudentRanking('${s.regNo}')" onmouseleave="onLeaveStudentRanking()">
+                <tr class="hover-row" onmouseenter="window.onHoverStudentRanking('${s.regNo}')" onmouseleave="window.onLeaveStudentRanking()">
                     <td><span class="badge bg-success">${idx + 1}</span></td>
                     <td class="fw-bold">${s.class}</td>
                     <td class="fw-bold text-dark">${s.name}</td>
@@ -1749,7 +1745,6 @@
             `;
         }).join('');
         
-        // B. 重點關懷排行榜
         normalList.sort((a,b) => a.zDiff - b.zDiff);
         const bottom20 = normalList.slice(0, 20);
         const regressBody = document.getElementById('rankingRegressBody');
@@ -1760,7 +1755,7 @@
             const rawColor = s.rawDiff >= 0 ? 'text-success' : 'text-danger';
             
             return `
-                <tr class="hover-row" onmouseenter="onHoverStudentRanking('${s.regNo}')" onmouseleave="onLeaveStudentRanking()">
+                <tr class="hover-row" onmouseenter="window.onHoverStudentRanking('${s.regNo}')" onmouseleave="window.onLeaveStudentRanking()">
                     <td><span class="badge bg-danger">${idx + 1}</span></td>
                     <td class="fw-bold">${s.class}</td>
                     <td class="fw-bold text-dark">${s.name}</td>
@@ -1774,7 +1769,6 @@
             `;
         }).join('');
         
-        // C. 基礎能力監測名單
         document.getElementById('floorCountBadge').innerText = `${floorList.length} 人`;
         const floorBody = document.getElementById('floorMonitoringBody');
         floorList.sort((a,b) => a.newRaw - b.newRaw);
@@ -1790,7 +1784,7 @@
                 else if (s.rawDiff < 0) advice = '⚠️ 分數與常模持續下滑。建議啟動第 3 層學業介入支援與心理關懷。';
                 
                 return `
-                    <tr class="hover-row" onmouseenter="onHoverStudentRanking('${s.regNo}')" onmouseleave="onLeaveStudentRanking()">
+                    <tr class="hover-row" onmouseenter="window.onHoverStudentRanking('${s.regNo}')" onmouseleave="window.onLeaveStudentRanking()">
                         <td class="text-muted small">${s.regNo}</td>
                         <td class="fw-bold">${s.class}</td>
                         <td class="fw-bold text-dark">${s.name}</td>
@@ -1814,9 +1808,6 @@
         renderRankingBellCurve(null);
     };
     
-    // ==========================================
-    // 🧭 四象限散佈圖與分類名冊 (色彩對調優化) [5]
-    // ==========================================
     window.renderQuadrantWithFilter = function() {
         const subj = document.getElementById('subjectSelector').value;
         const filterClass = document.getElementById('quadrantClassSelector').value;
@@ -1862,7 +1853,7 @@
             list.sort((a, b) => isPositiveProgress ? b.y - a.y : a.y - b.y);
             if (list.length === 0) { el.innerHTML = '<div class="text-muted p-1 text-center small">空</div>'; return; }
             el.innerHTML = list.map(s => `
-                <div class="d-flex justify-content-between hover-row p-1 border-bottom" onmouseenter="onHoverStudentRanking('${s.regNo}')" onmouseleave="onLeaveStudentRanking()">
+                <div class="d-flex justify-content-between hover-row p-1 border-bottom" onmouseenter="window.onHoverStudentRanking('${s.regNo}')" onmouseleave="window.onLeaveStudentRanking()">
                     <span><b>${s.classNo}號</b> ${s.name} (${s.class})</span>
                     <span class="fw-bold ${s.y >= 0 ? 'text-success' : 'text-danger'}">ΔZ: ${s.y >= 0 ? '+' : ''}${s.y.toFixed(2)}</span>
                 </div>
@@ -1891,12 +1882,11 @@
                 datasets: [{
                     label: '學生分佈', data: scatterData,
                     backgroundColor: scatterData.map(d => {
-                        // 🌟 應您指示：逆勢成長(第二象限) 改藍色(#3182ce)；警訊高分(第四象限) 改黃色(#d69e2e) [5]
-                        if (d.x >= 0 && d.y > 0.2) return '#198754'; // 穩步領先 ➔ 綠色
-                        if (d.x < 0 && d.y > 0.2) return '#3182ce';  // 逆勢成長 ➔ 藍色 [5]
-                        if (d.x < 0 && d.y < -0.2) return '#dc3545'; // 雙重落後 ➔ 紅色
-                        if (d.x >= 0 && d.y < -0.2) return '#d69e2e'; // 警訊高分 ➔ 黃色 [5]
-                        return '#cbd5e0'; // 持平穩定 ➔ 灰色
+                        if (d.x >= 0 && d.y > 0.2) return '#198754'; 
+                        if (d.x < 0 && d.y > 0.2) return '#3182ce';  
+                        if (d.x < 0 && d.y < -0.2) return '#dc3545'; 
+                        if (d.x >= 0 && d.y < -0.2) return '#d69e2e'; 
+                        return '#cbd5e0'; 
                     }),
                     pointRadius: 6
                 }]
@@ -1933,10 +1923,7 @@
         });
     }
     
-    // ==========================================
-    // 🔍 經典啞鈴圖：中英數三行並排與自然班號排序 [4]
-    // ==========================================
-    function renderDetailDumbbellChart() {
+    window.renderDetailDumbbellChart = function() {
         const selGroup = document.getElementById('groupDetailSelector').value;
         const sortVal = document.getElementById('sortSelector').value;
         const checkedOld = Array.from(document.querySelectorAll('#filter-dumbbellChart .micro-tick:checked')).map(el => el.value);
@@ -1946,19 +1933,13 @@
         
         let gStudents = currentAnalysisResult.students.filter(s => s.groupKey === selGroup);
         
-        // ==========================================
-        // 📌 保留舊有的 4 個排序方式 (基於目前選擇的主科)
-        // ==========================================
-        gStudents.sort((a, b) => a.classNo - b.classNo); // 預設依班號 (自然數 1,2,3...)
+        gStudents.sort((a, b) => a.classNo - b.classNo); 
         
         if (sortVal === 'new_score_desc') {
-            // 依新成績 (高至低)
             gStudents.sort((a, b) => (b.newScores.raw[currentMainSubj] || 0) - (a.newScores.raw[currentMainSubj] || 0));
         } else if (sortVal === 'old_score_desc') {
-            // 依舊成績 (高至低)
             gStudents.sort((a, b) => (b.oldScores.raw[currentMainSubj] || 0) - (a.oldScores.raw[currentMainSubj] || 0));
         } else if (sortVal === 'diff_desc') {
-            // 依相對進步幅度 (大至小)
             gStudents.sort((a, b) => {
                 const diffA = (a.newScores.z[currentMainSubj] || 0) - (a.oldScores.z[currentMainSubj] || 0);
                 const diffB = (b.newScores.z[currentMainSubj] || 0) - (b.oldScores.z[currentMainSubj] || 0);
@@ -1972,16 +1953,12 @@
         const annotations = [];
         const shapes = [];
         
-        // ==========================================
-        // 📌 設定版面佈局配置：中、英、數各科
-        // ==========================================
         const layouts = { 
             chi_read: { domain: [0, 0.32], title: '中文閱讀', key: 'chi_read', color: '#1f77b4' }, 
             eng_read: { domain: [0.34, 0.66], title: '英文閱讀', key: 'eng_read', color: '#ff7f0e' }, 
             math: { domain: [0.68, 1], title: '數學', key: 'math', color: '#2ca02c' } 
         };
         
-        // 若啟動三科並列，則強制使用中讀、英讀、數學陣列；否則動態生成單科佈局
         let activeLayouts = [];
         if (allSubjectMode) {
             activeLayouts = [layouts.chi_read, layouts.eng_read, layouts.math];
@@ -2009,13 +1986,11 @@
                     const diff = (s.newScores.z[L.key] || 0) - (s.oldScores.z[L.key] || 0);
                     const arrowColor = diff > 0.2 ? '#198754' : diff < -0.2 ? '#dc3545' : '#718096';
                     
-                    // 繪製箭頭
                     annotations.push({
                         x: newRaw, y: labels[sIdx], ax: oldRawAvg, ay: labels[sIdx],
                         xref: axisName, yref: 'y', axref: axisName, ayref: 'y',
                         showarrow: true, arrowhead: 2, arrowsize: 1, arrowwidth: 1.5, arrowcolor: arrowColor
                     });
-                    // 繪製分數及差值文字
                     annotations.push({
                         x: Math.max(oldRawAvg, newRaw) + 2.5, y: labels[sIdx], xref: axisName, yref: 'y',
                         text: `${newRaw.toFixed(0)}分 (ΔZ:${diff >= 0 ? '+' : ''}${diff.toFixed(2)})`,
@@ -2024,11 +1999,9 @@
                 }
             });
             
-            // 加入舊成績與新成績標記點 (使用對應學科的主題顏色)
             traces.push({ x: oldRawList, y: labels, xaxis: axisName, yaxis: 'y', mode: 'markers', marker: { color: '#cbd5e0', size: 8 }, hoverinfo: 'x+y', name: '歷史舊平均', showlegend: false });
             traces.push({ x: newRawList, y: labels, xaxis: axisName, yaxis: 'y', mode: 'markers', marker: { color: L.color, size: 10 }, hoverinfo: 'x+y', name: '最新成績', showlegend: false });
             
-            // 計算並畫出該科的全級平均線
             const newStats = currentAnalysisResult.statsMap[currentAnalysisResult.newCodes[0]]?.[L.key]; 
             const newGradeMean = newStats ? newStats.mean : 50;
             const oldMeans = checkedOld.map(c => currentAnalysisResult.statsMap[c]?.[L.key]?.mean).filter(v => v !== undefined);
@@ -2059,7 +2032,6 @@
             plot_bgcolor: '#ffffff', paper_bgcolor: '#ffffff'
         };
         
-        // 判斷是否啟用 Subplots (子圖) 佈局
         if (allSubjectMode) {
             layout.xaxis = { domain: layouts.chi_read.domain, title: '中文閱讀 (分)', range: [0, 105], gridcolor: '#edf2f7' };
             layout.xaxis2 = { domain: layouts.eng_read.domain, title: '英文閱讀 (分)', range: [0, 105], gridcolor: '#edf2f7' };
@@ -2070,12 +2042,8 @@
         }
         
         Plotly.newPlot('chartDetailRawScore', traces, layout, { displayModeBar: false });
-    }
-
+    };
     
-    // ==========================================
-    // 🛠️ 輔助工具：白底匯出與狀態提示
-    // ==========================================
     const showStatus = (message, type = 'info') => {
         const statusEl = document.getElementById('status');
         statusEl.style.display = 'block'; statusEl.textContent = message;
@@ -2105,7 +2073,6 @@
         if (!el) return;
         Plotly.downloadImage(el, { format: 'png', width: 1200, height: 500, filename: filename });
     };
-    </script>
-    </body>
-    </html>
-    
+</script>
+</body>
+</html>
