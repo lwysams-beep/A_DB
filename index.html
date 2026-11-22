@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>跨年度學籍 Z-Score 智慧多維分析系統 (v24.1 - 雲端分析存取版)</title>
+    <title>Z-Score 標準化成績分析系統 (v29.0)</title>
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Chart.js & Plugins -->
@@ -79,7 +79,7 @@
 <div id="login-overlay">
     <div class="login-box">
         <h3 class="mb-2 fw-bold text-primary">🔒 系統安全登入</h3>
-        <p class="text-muted small mb-4">成績分析系統</p>
+        <p class="text-muted small mb-4">標準化成績分析系統</p>
         <input type="email" id="loginEmail" class="form-control mb-3" placeholder="電子郵件 (Email)">
         <input type="password" id="loginPass" class="form-control mb-3" placeholder="密碼 (Password)" onkeypress="if(event.key==='Enter') performLogin()">
         <button id="btnLoginBtn" class="btn btn-primary w-100 fw-bold" onclick="performLogin()">登入系統</button>
@@ -92,8 +92,8 @@
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div></div>
         <div class="text-center">
-            <h1 class="fw-bold text-primary mb-1">📊 成績分析系統</h1>
-            <p class="text-muted mb-0">v29</p>
+            <h1 class="fw-bold text-primary mb-1">📊 標準化成績分析系統</h1>
+            <p class="text-muted mb-0">v29.0</p>
         </div>
         <div class="text-end">
             <span id="user-role-badge" class="badge me-2"></span>
@@ -268,14 +268,14 @@
                         <div class="row g-2">
                             <div class="col-4">
                                 <div class="stat-card">
-                                    <div class="small text-muted">全級標準差 ($\sigma$)</div>
+                                    <div class="small text-muted">全級標準差 ($sigma)</div>
                                     <div id="stat_sd" class="fs-4 fw-bold text-primary">-</div>
                                     <div id="stat_sd_label" class="badge bg-secondary small mt-1">-</div>
                                 </div>
                             </div>
                             <div class="col-4">
                                 <div class="stat-card">
-                                    <div class="small text-muted">試卷鑑別度 ($D$)</div>
+                                    <div class="small text-muted">試卷鑑別度 ($D)</div>
                                     <div id="stat_discrimination" class="fs-4 fw-bold text-success">-</div>
                                     <div id="stat_disc_label" class="badge bg-secondary small mt-1">-</div>
                                 </div>
