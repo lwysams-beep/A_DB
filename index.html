@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Z-Score 標準化成績分析系統 (v29.4</title>
+    <title>Z-Score 標準化成績分析系統 (v29.5</title>
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Chart.js & Plugins -->
@@ -93,7 +93,7 @@
         <div></div>
         <div class="text-center">
             <h1 class="fw-bold text-primary mb-1">📊 標準化成績分析系統</h1>
-            <p class="text-muted mb-0">v29.4</p>
+            <p class="text-muted mb-0">v29.5</p>
         </div>
         <div class="text-end">
             <span id="user-role-badge" class="badge me-2"></span>
@@ -1208,8 +1208,18 @@
     
     // 🌟 在 runEbelTestDiagnostics 更新排版 (將 <br> 替換成 span 容器對齊)
     function runEbelTestDiagnostics(subj, newCodes) {
+        // 🌟 防呆：如果沒有勾選新成績，清空顯示並退出
+        if (!newCodes || newCodes.length === 0) return;
+
         const students = currentAnalysisResult.students;
-        const scores = students.map(s => s.newScores.raw[subj]).filter(v => v !== null && !isNaN(v));
+        
+        // 🌟 動態計算：抓取所有有打勾的新成績來算統計
+        const scores = [];
+        students.forEach(s => {
+            const nList = newCodes.map(c => s.details[c]?.raw[subj]).filter(v => v !== undefined && v !== null && !isNaN(v));
+            if (nList.length > 0) scores.push(ss.mean(nList));
+        });
+        
         if (scores.length === 0) return;
         
         const sd = ss.standardDeviation(scores);
@@ -1234,12 +1244,12 @@
         else if (discrimination >= 0.20) { discLabel.innerText = "鑑別度一般"; discLabel.className = "badge bg-warning"; }
         else { discLabel.innerText = "❌ 缺乏鑑別度"; discLabel.className = "badge bg-danger"; }
         
-        // 🌟 修正排版對齊
         document.getElementById('stat_minmax').innerHTML = `
             <span class="me-3">最高: <span class="text-success">${ss.max(scores).toFixed(0)}分</span></span>
             <span>最低: <span class="text-danger">${ss.min(scores).toFixed(0)}分</span></span>
         `;
     }
+
     
     window.redrawAllCharts = function() {
         const subj = document.getElementById('subjectSelector').value;
@@ -1261,21 +1271,40 @@
     };
     
     function calculateGradeAvgDiff(subj, oldCodes, newCodes) {
+        // 🌟 防呆：如果沒有勾選任何新或舊成績，就歸零並退出
+        if (!oldCodes || oldCodes.length === 0 || !newCodes || newCodes.length === 0) {
+            const badge = document.getElementById('gradeAvgDiffBadge');
+            if (badge) {
+                badge.innerText = `0.0分`;
+                badge.style.backgroundColor = '#718096';
+            }
+            return;
+        }
+
         const students = currentAnalysisResult.students;
-        const newRaws = students.map(s => s.newScores.raw[subj]).filter(v => v !== null && !isNaN(v));
+        
+        // 🌟 動態計算：根據「目前有打勾」的新成績與舊成績重新計算全班平均
+        const newRaws = [];
         const oldRaws = [];
+        
         students.forEach(s => {
-            const valList = oldCodes.map(c => s.details[c]?.raw[subj]).filter(v => v !== undefined && v !== null);
-            if (valList.length > 0) oldRaws.push(ss.mean(valList));
+            const nList = newCodes.map(c => s.details[c]?.raw[subj]).filter(v => v !== undefined && v !== null && !isNaN(v));
+            if (nList.length > 0) newRaws.push(ss.mean(nList));
+            
+            const oList = oldCodes.map(c => s.details[c]?.raw[subj]).filter(v => v !== undefined && v !== null && !isNaN(v));
+            if (oList.length > 0) oldRaws.push(ss.mean(oList));
         });
         
         if (newRaws.length > 0 && oldRaws.length > 0) {
             const diff = ss.mean(newRaws) - ss.mean(oldRaws);
             const badge = document.getElementById('gradeAvgDiffBadge');
-            badge.innerText = `${diff >= 0 ? '+' : ''}${diff.toFixed(1)}分`;
-            badge.style.backgroundColor = diff >= 0 ? '#198754' : '#e53e3e';
+            if (badge) {
+                badge.innerText = `${diff >= 0 ? '+' : ''}${diff.toFixed(1)}分`;
+                badge.style.backgroundColor = diff >= 0 ? '#198754' : '#e53e3e';
+            }
         }
     }
+
     
     function renderImproveRegressChart(subj, oldCodes, newCodes) {
         const students = currentAnalysisResult.students;
@@ -1875,13 +1904,16 @@
         const checkedOld = Array.from(document.querySelectorAll(`#${panelId} .micro-tick-old:checked`)).map(el => el.value);
         const checkedNew = Array.from(document.querySelectorAll(`#${panelId} .micro-tick-new:checked`)).map(el => el.value);
         
-        // 防凍結：移除早前的 if return，讓清空勾選時圖表能安全重繪(清空)，不會當機
+        if (checkedOld.length === 0 || checkedNew.length === 0) return; // 防呆
+        
+        // 確保這裡都有把 checkedOld, checkedNew 傳進去！
         if (panelId === 'filter-chartImproveRegress') renderImproveRegressChart(subj, checkedOld, checkedNew);
         else if (panelId === 'filter-chartTwoPointTrend') renderTwoPointTrendChart(subj, checkedOld, checkedNew);
         else if (panelId === 'filter-chartClassRawLine') renderClassRawTrendLine(subj, checkedOld, checkedNew);
         else if (panelId === 'filter-chartQuadrant') renderQuadrantChart(subj, checkedOld, checkedNew, document.getElementById('quadrantClassSelector').value);
         else if (panelId === 'filter-dumbbellChart') renderDetailDumbbellChart();
     };
+
 
     // 🌟 修正：四象限專用的班別下拉選單觸發函數 (支援新舊多選陣列)
     window.renderQuadrantWithFilter = function() {
