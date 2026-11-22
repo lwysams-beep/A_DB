@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Z-Score 標準化成績分析系統 (v29.2</title>
+    <title>Z-Score 標準化成績分析系統 (v29.3</title>
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Chart.js & Plugins -->
@@ -93,7 +93,7 @@
         <div></div>
         <div class="text-center">
             <h1 class="fw-bold text-primary mb-1">📊 標準化成績分析系統</h1>
-            <p class="text-muted mb-0">v29.2</p>
+            <p class="text-muted mb-0">v29.3</p>
         </div>
         <div class="text-end">
             <span id="user-role-badge" class="badge me-2"></span>
@@ -1197,13 +1197,13 @@
     window.renderQuadrantWithFilter = function() {
         const subj = document.getElementById('subjectSelector').value;
         const filterClass = document.getElementById('quadrantClassSelector').value;
-        // 修正這裡，同時抓取新舊勾選陣列
+        
         const checkedOld = Array.from(document.querySelectorAll('#filter-chartQuadrant .micro-tick-old:checked')).map(el => el.value);
         const checkedNew = Array.from(document.querySelectorAll('#filter-chartQuadrant .micro-tick-new:checked')).map(el => el.value);
         
-        if (checkedOld.length === 0 || checkedNew.length === 0) return;
         renderQuadrantChart(subj, checkedOld, checkedNew, filterClass);
     };
+
 
     
     // 🌟 在 runEbelTestDiagnostics 更新排版 (將 <br> 替換成 span 容器對齊)
@@ -1875,8 +1875,7 @@
         const checkedOld = Array.from(document.querySelectorAll(`#${panelId} .micro-tick-old:checked`)).map(el => el.value);
         const checkedNew = Array.from(document.querySelectorAll(`#${panelId} .micro-tick-new:checked`)).map(el => el.value);
         
-        if (checkedOld.length === 0 || checkedNew.length === 0) return;
-        
+        // 防凍結：移除早前的 if return，讓清空勾選時圖表能安全重繪(清空)，不會當機
         if (panelId === 'filter-chartImproveRegress') renderImproveRegressChart(subj, checkedOld, checkedNew);
         else if (panelId === 'filter-chartTwoPointTrend') renderTwoPointTrendChart(subj, checkedOld, checkedNew);
         else if (panelId === 'filter-chartClassRawLine') renderClassRawTrendLine(subj, checkedOld, checkedNew);
@@ -1904,21 +1903,31 @@
         
         students.forEach(s => {
             if (filterClass !== 'all' && s.class !== filterClass) return;
-            const newZList = newCodes.map(code => s.details[code]?.z[subj]).filter(v => v !== undefined && v !== null);
+            
+            // 🌟 加入 !isNaN() 防呆，徹底阻絕 NaN 破壞圖表
+            const newZList = newCodes.map(code => s.details[code]?.z[subj]).filter(v => v !== undefined && v !== null && !isNaN(v));
             const newZAvg = newZList.length > 0 ? ss.mean(newZList) : null;
-            const oldZList = oldCodes.map(code => s.details[code]?.z[subj]).filter(v => v !== undefined && v !== null);
+            
+            const oldZList = oldCodes.map(code => s.details[code]?.z[subj]).filter(v => v !== undefined && v !== null && !isNaN(v));
             const oldZAvg = oldZList.length > 0 ? ss.mean(oldZList) : null;
             
             if (newZAvg !== null && oldZAvg !== null) {
                 const xVal = oldZAvg;
                 const yVal = newZAvg - oldZAvg;
                 
+                // 🌟 同時替 tooltip 的原始分數也加上動態安全計算
+                const newRawList = newCodes.map(code => s.details[code]?.raw[subj]).filter(v => v !== undefined && v !== null);
+                const oldRawList = oldCodes.map(code => s.details[code]?.raw[subj]).filter(v => v !== undefined && v !== null);
+                const newRawAvg = newRawList.length > 0 ? ss.mean(newRawList) : 0;
+                const oldRawAvg = oldRawList.length > 0 ? ss.mean(oldRawList) : 0;
+
                 const item = {
                     x: xVal, y: yVal, name: s.name, class: s.class, classNo: s.classNo, regNo: s.regNo, group: s.groupKey,
-                    oldRaw: s.oldScores.raw[subj], newRaw: s.newScores.raw[subj], rawDiff: s.newScores.raw[subj] - s.oldScores.raw[subj]
+                    oldRaw: oldRawAvg, newRaw: newRawAvg, rawDiff: newRawAvg - oldRawAvg
                 };
                 scatterData.push(item);
                 
+                // 進行四象限分類
                 if (Math.abs(yVal) <= 0.2) {
                     listFlat.push(item);
                 } else {
@@ -1929,6 +1938,7 @@
                 }
             }
         });
+
         
         const renderQuadTableList = (elId, list, isPositiveProgress = true) => {
             const el = document.getElementById(elId);
