@@ -508,19 +508,21 @@
                 <div class="card h-100 shadow-sm border-start border-secondary border-4">
                     <div class="card-header bg-secondary text-white fw-bold">📋 學生學習狀態四象限名冊 (配合班別篩選)</div>
                     <div class="card-body p-2" style="background-color: #f7fafc; overflow-y: auto; max-height: 480px;">
+                        <div class="row g-2">
+                            <!-- 移到左邊的 🔵 逆勢成長 (第二象限) -->
                             <div class="col-6">
                                 <div class="quadrant-box">
                                     <div class="quadrant-title text-primary border-primary">🔵 逆勢成長 (第二象限)</div>
                                     <div id="quadList_growth" class="small"></div>
                                 </div>
                             </div>
-                            <div class="row g-2">
-                                <div class="col-6">
-                                    <div class="quadrant-box">
-                                        <div class="quadrant-title text-success border-success">🟢 穩步領先 (第一象限)</div>
-                                        <div id="quadList_lead" class="small"></div>
-                                    </div>
+                            <!-- 移到右邊的 🟢 穩步領先 (第一象限) -->
+                            <div class="col-6">
+                                <div class="quadrant-box">
+                                    <div class="quadrant-title text-success border-success">🟢 穩步領先 (第一象限)</div>
+                                    <div id="quadList_lead" class="small"></div>
                                 </div>
+                            </div>
                             <div class="col-6">
                                 <div class="quadrant-box">
                                     <div class="quadrant-title text-danger border-danger">🔴 雙重落後 (第三象限)</div>
