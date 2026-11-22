@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Z-Score 標準化成績分析系統 (v29.0)</title>
+    <title>Z-Score 標準化成績分析系統 (v29.1</title>
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Chart.js & Plugins -->
@@ -93,7 +93,7 @@
         <div></div>
         <div class="text-center">
             <h1 class="fw-bold text-primary mb-1">📊 標準化成績分析系統</h1>
-            <p class="text-muted mb-0">v29.0</p>
+            <p class="text-muted mb-0">v29.1</p>
         </div>
         <div class="text-end">
             <span id="user-role-badge" class="badge me-2"></span>
@@ -1164,38 +1164,47 @@
         panels.forEach(pId => {
             const panel = document.getElementById(pId);
             if (!panel) return;
-            panel.innerHTML = '<span class="fw-bold me-3">🔧 本圖表獨立微調 (舊評估):</span>';
+            
+            panel.innerHTML = '<span class="fw-bold me-2">🔧 本圖表獨立微調:</span>';
+            
+            // 🔴 舊成績 Checkbox
+            panel.innerHTML += '<span class="badge bg-danger me-1">舊</span>';
             currentAnalysisResult.oldCodes.forEach(code => {
                 const span = document.createElement('span');
-                span.className = 'form-check form-check-inline m-0 me-3';
+                span.className = 'form-check form-check-inline m-0 me-2';
                 span.innerHTML = `
-                    <input class="form-check-input micro-tick" type="checkbox" data-chart="${pId}" value="${code}" checked id="${pId}_${code}" onchange="onMicroFilterChanged('${pId}')">
-                    <label class="form-check-label text-danger" for="${pId}_${code}">${code}</label>
+                    <input class="form-check-input micro-tick-old" type="checkbox" value="${code}" checked id="${pId}_old_${code}" onchange="onMicroFilterChanged('${pId}')">
+                    <label class="form-check-label text-danger" for="${pId}_old_${code}">${code}</label>
                 `;
                 panel.appendChild(span);
             });
             
-            const spanNew = document.createElement('span');
-            spanNew.className = 'form-check form-check-inline m-0';
-            spanNew.innerHTML = `
-                <input class="form-check-input" type="checkbox" checked disabled>
-                <label class="form-check-label text-success">已選新成績 (${currentAnalysisResult.newCodes.length} 次評估)</label>
-            `;
-            panel.appendChild(spanNew);
+            // 🟢 新成績 Checkbox (解鎖並可多選)
+            panel.innerHTML += '<span class="badge bg-success ms-2 me-1">新</span>';
+            currentAnalysisResult.newCodes.forEach(code => {
+                const span = document.createElement('span');
+                span.className = 'form-check form-check-inline m-0 me-2';
+                span.innerHTML = `
+                    <input class="form-check-input micro-tick-new" type="checkbox" value="${code}" checked id="${pId}_new_${code}" onchange="onMicroFilterChanged('${pId}')">
+                    <label class="form-check-label text-success" for="${pId}_new_${code}">${code}</label>
+                `;
+                panel.appendChild(span);
+            });
         });
     }
+
     
-    window.onMicroFilterChanged = function(panelId) {
+    window.renderQuadrantWithFilter = function() {
         const subj = document.getElementById('subjectSelector').value;
-        const checkedTicks = Array.from(document.querySelectorAll(`#${panelId} .micro-tick:checked`)).map(el => el.value);
-        const baseNewList = currentAnalysisResult.newCodes;
+        const filterClass = document.getElementById('quadrantClassSelector').value;
+        // 修正這裡，同時抓取新舊勾選陣列
+        const checkedOld = Array.from(document.querySelectorAll('#filter-chartQuadrant .micro-tick-old:checked')).map(el => el.value);
+        const checkedNew = Array.from(document.querySelectorAll('#filter-chartQuadrant .micro-tick-new:checked')).map(el => el.value);
         
-        if (panelId === 'filter-chartImproveRegress') renderImproveRegressChart(subj, checkedTicks, baseNewList);
-        else if (panelId === 'filter-chartTwoPointTrend') renderTwoPointTrendChart(subj, checkedTicks, baseNewList);
-        else if (panelId === 'filter-chartClassRawLine') renderClassRawTrendLine(subj, checkedTicks, baseNewList);
-        else if (panelId === 'filter-chartQuadrant') renderQuadrantChart(subj, checkedTicks, baseNewList, document.getElementById('quadrantClassSelector').value);
-        else if (panelId === 'filter-dumbbellChart') renderDetailDumbbellChart();
+        if (checkedOld.length === 0 || checkedNew.length === 0) return;
+        renderQuadrantChart(subj, checkedOld, checkedNew, filterClass);
     };
+
     
     // 🌟 在 runEbelTestDiagnostics 更新排版 (將 <br> 替換成 span 容器對齊)
     function runEbelTestDiagnostics(subj, newCodes) {
@@ -1952,7 +1961,7 @@
                     },
                     y: { 
                         suggestedMin: -1.5, suggestedMax: 1.5, // 固定 Y 軸範圍，確保與 X 軸視覺比例 1:1
-                        title: { display: true, text: '相對進退步 (Z-Score 新舊相差)' } 
+                        title: { display: true, text: '相對進退步 (ΔZ)' } 
                     }
                 },
 
@@ -1996,7 +2005,12 @@
     window.renderDetailDumbbellChart = function() {
         const selGroup = document.getElementById('groupDetailSelector').value;
         const sortVal = document.getElementById('sortSelector').value;
-        const checkedOld = Array.from(document.querySelectorAll('#filter-dumbbellChart .micro-tick:checked')).map(el => el.value);
+        
+        // 抓取面板上的新舊成績勾選陣列
+        const checkedOld = Array.from(document.querySelectorAll('#filter-dumbbellChart .micro-tick-old:checked')).map(el => el.value);
+        const checkedNew = Array.from(document.querySelectorAll('#filter-dumbbellChart .micro-tick-new:checked')).map(el => el.value);
+        
+        if(checkedOld.length === 0 || checkedNew.length === 0) return;
         
         const allSubjectMode = document.getElementById('dumbbellSubjectAllMode').checked;
         const currentMainSubj = document.getElementById('subjectSelector').value;
@@ -2040,50 +2054,53 @@
 
         activeLayouts.forEach((L, idx) => {
             const axisName = allSubjectMode ? (idx === 0 ? 'x' : (idx === 1 ? 'x2' : 'x3')) : 'x';
-            
             const oldRawList = [];
             const newRawList = [];
-            const newDotColors = []; // 🌟 新增：用來記錄每位學生新成績圓點的顏色
+            const newDotColors = [];
             
             gStudents.forEach((s, sIdx) => {
-                const newRaw = s.newScores.raw[L.key];
-                const oldList = checkedOld.map(code => s.details[code]?.raw[L.key]).filter(v => v !== undefined && v !== null);
-                const oldRawAvg = oldList.length > 0 ? ss.mean(oldList) : null;
+                // 🌟 動態計算打勾的新成績平均
+                const nListRaw = checkedNew.map(code => s.details[code]?.raw[L.key]).filter(v => v !== undefined && v !== null);
+                const newRaw = nListRaw.length > 0 ? ss.mean(nListRaw) : null;
+                
+                // 動態計算打勾的舊成績平均
+                const oListRaw = checkedOld.map(code => s.details[code]?.raw[L.key]).filter(v => v !== undefined && v !== null);
+                const oldRawAvg = oListRaw.length > 0 ? ss.mean(oListRaw) : null;
                 
                 oldRawList.push(oldRawAvg);
                 newRawList.push(newRaw);
                 
                 if (newRaw !== null && oldRawAvg !== null) {
-                    const diff = (s.newScores.z[L.key] || 0) - (s.oldScores.z[L.key] || 0);
-                    // 🌟 定義狀態顏色：進步(綠 #198754) / 退步(紅 #dc3545) / 持平(深灰色 #718096)
+                    // 動態計算新舊 Z-Score 平均
+                    const nListZ = checkedNew.map(code => s.details[code]?.z[L.key]).filter(v => v !== undefined && v !== null);
+                    const newZ = nListZ.length > 0 ? ss.mean(nListZ) : 0;
+                    const oListZ = checkedOld.map(code => s.details[code]?.z[L.key]).filter(v => v !== undefined && v !== null);
+                    const oldZ = oListZ.length > 0 ? ss.mean(oListZ) : 0;
+                    
+                    const diff = newZ - oldZ;
                     const statusColor = diff > 0.2 ? '#198754' : diff < -0.2 ? '#dc3545' : '#718096';
+                    newDotColors.push(statusColor);
                     
-                    newDotColors.push(statusColor); // 把顏色存進陣列給圓點用
-                    
-                    // 繪製箭頭 (保持箭頭與圓點同色)
                     annotations.push({
                         x: newRaw, y: labels[sIdx], ax: oldRawAvg, ay: labels[sIdx],
                         xref: axisName, yref: 'y', axref: axisName, ayref: 'y',
                         showarrow: true, arrowhead: 2, arrowsize: 1, arrowwidth: 1.5, arrowcolor: statusColor
                     });
-                    // 繪製分數及差值文字
                     annotations.push({
                         x: Math.max(oldRawAvg, newRaw) + 2.5, y: labels[sIdx], xref: axisName, yref: 'y',
                         text: `${newRaw.toFixed(0)}分 (ΔZ:${diff >= 0 ? '+' : ''}${diff.toFixed(2)})`,
                         showarrow: false, font: { color: statusColor, size: 9, weight: 'bold' }, xanchor: 'left'
                     });
                 } else {
-                    newDotColors.push('#cbd5e0'); // 若缺考，給予預設淺灰色
+                    newDotColors.push('#cbd5e0');
                 }
             });
             
-            // 🌟 加入舊成績與新成績標記點 (注意新成績 marker 的 color 改成了 newDotColors 陣列)
             traces.push({ x: oldRawList, y: labels, xaxis: axisName, yaxis: 'y', mode: 'markers', marker: { color: '#cbd5e0', size: 8 }, hoverinfo: 'x+y', name: '歷史舊平均', showlegend: false });
             traces.push({ x: newRawList, y: labels, xaxis: axisName, yaxis: 'y', mode: 'markers', marker: { color: newDotColors, size: 10 }, hoverinfo: 'x+y', name: '最新成績', showlegend: false });
             
-            // 計算並畫出該科的全級平均線
-            const newStats = currentAnalysisResult.statsMap[currentAnalysisResult.newCodes[0]]?.[L.key]; 
-            const newGradeMean = newStats ? newStats.mean : 50;
+            const newMeans = checkedNew.map(c => currentAnalysisResult.statsMap[c]?.[L.key]?.mean).filter(v => v !== undefined);
+            const newGradeMean = newMeans.length > 0 ? ss.mean(newMeans) : 50;
             const oldMeans = checkedOld.map(c => currentAnalysisResult.statsMap[c]?.[L.key]?.mean).filter(v => v !== undefined);
             const oldGradeMean = oldMeans.length > 0 ? ss.mean(oldMeans) : 50;
 
@@ -2097,7 +2114,6 @@
                 x: newGradeMean, y: 1.08, xref: axisName, yref: 'paper', text: `新均: ${newGradeMean.toFixed(1)}分`, showarrow: false, font: { color: '#dc3545', size: 10, weight: 'bold' }, xanchor: 'center'
             });
         });
-
         
         const computedHeight = gStudents.length * 35;
         const mainSubjName = document.querySelector(`#subjectSelector option[value="${currentMainSubj}"]`).innerText;
@@ -2124,6 +2140,7 @@
         
         Plotly.newPlot('chartDetailRawScore', traces, layout, { displayModeBar: false });
     };
+
     
     const showStatus = (message, type = 'info') => {
         const statusEl = document.getElementById('status');
