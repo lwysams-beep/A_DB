@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>跨年度學籍 Z-Score 智慧多維分析系統 (v21.0 - 終極大數據旗艦版)</title>
+    <title>跨年度學籍 Z-Score 智慧多維分析系統 (v22.0 - 權限鎖定版)</title>
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- Chart.js & Plugins -->
@@ -40,6 +40,7 @@
         window.signOut = signOut;
         window.onAuthStateChanged = onAuthStateChanged;
 
+        window.firebaseInitialized = true;
         window.dispatchEvent(new Event('firebaseReady'));
     </script>
 
@@ -61,16 +62,13 @@
         .ranking-table td { font-size: 0.82rem; }
         .hover-row { cursor: pointer; transition: background-color 0.1s; }
         .hover-row:hover { background-color: #edf2f7 !important; }
-        
-        /* 🎛️ Scale Bar CSS 動態放大發光效果 */
         .scale-bar-container { display: flex; justify-content: space-around; gap: 8px; margin-top: 15px; background: #fff; padding: 10px; border-radius: 8px; border: 1px solid #edf2f7; }
         .scale-badge { font-size: 0.78rem; padding: 6px 10px; border-radius: 6px; font-weight: bold; color: white; transition: all 0.15s ease-in-out; opacity: 1; text-align: center; flex: 1; }
         .scale-badge.dimmed { opacity: 0.35; transform: scale(0.93); }
         .scale-badge.active-highlight { transform: scale(1.13); box-shadow: 0 0 12px rgba(0,0,0,0.25); z-index: 10; opacity: 1 !important; }
-        
-        /* 四象限右側名冊 */
         .quadrant-box { border-radius: 8px; padding: 10px; margin-bottom: 8px; height: 195px; overflow-y: auto; background: #fff; border: 1px solid #e2e8f0; }
         .quadrant-title { font-size: 0.85rem; font-weight: bold; margin-bottom: 5px; padding-bottom: 4px; border-bottom: 2px solid; }
+        .locked-badge { font-size: 0.75rem; background-color: #6c757d; color: white; padding: 2px 6px; border-radius: 4px; margin-left: 5px; }
     </style>
 </head>
 <body>
@@ -93,7 +91,7 @@
         <div></div>
         <div class="text-center">
             <h1 class="fw-bold text-primary mb-1">📊 跨年度 Z-Score 智慧多維分析系統</h1>
-            <p class="text-muted mb-0">v21.0 - 鐘形連動、35分地板篩選、8欄對照、學籍班號整合版</p>
+            <p class="text-muted mb-0">v22.0 - 權限隔離與鎖定教學版</p>
         </div>
         <div class="text-end">
             <span id="user-role-badge" class="badge me-2"></span>
@@ -103,11 +101,11 @@
     </div>
 
     <!-- 頂部控制面板：選擇現行年度與年級 -->
-    <div class="card mb-4 shadow-sm bg-white border-start border-primary border-4">
+    <div class="card mb-4 shadow-sm bg-white border-start border-primary border-4" id="cohortControlCard">
         <div class="card-body">
             <div class="row g-3 align-items-center">
                 <div class="col-md-3">
-                    <label class="form-label fw-bold text-dark">📅 選擇現行年度 (學年)</label>
+                    <label class="form-label fw-bold text-dark">📅 選擇現行年度 (學年) <span id="yearLockTag" style="display:none;" class="locked-badge">唯讀鎖定</span></label>
                     <select id="selectSchoolYear" class="form-select border-primary" onchange="updateGradeDropdown()">
                         <option value="26">2026/2027 (26學年)</option>
                         <option value="25">2025/2026 (25學年)</option>
@@ -115,7 +113,7 @@
                     </select>
                 </div>
                 <div class="col-md-4">
-                    <label class="form-label fw-bold text-dark">🏫 選擇年級 (自動計算入學年)</label>
+                    <label class="form-label fw-bold text-dark">🏫 選擇年級 (自動計算入學年) <span id="gradeLockTag" style="display:none;" class="locked-badge">唯讀鎖定</span></label>
                     <select id="selectGrade" class="form-select border-primary" onchange="onCohortChanged()"></select>
                 </div>
                 <div class="col-md-5 text-end">
@@ -153,7 +151,6 @@
                             <input type="file" id="fileRegistryCSV" class="form-control form-control-sm" accept=".csv" onchange="handleRegistryFileSelected(this)">
                         </div>
                     </div>
-                    <!-- 名冊下拉選單對齊確認區 -->
                     <div id="registryMappingArea" class="mapping-box" style="display: none;">
                         <h6 class="fw-bold text-success mb-2">🔍 請確認名冊對應欄位 (下拉選單確認)：</h6>
                         <div class="row g-2 small">
@@ -181,7 +178,6 @@
                             <input type="file" id="fileScoreCSV" class="form-control form-control-sm" accept=".csv" onchange="handleScoreFileSelected(this)">
                         </div>
                     </div>
-                    <!-- 成績下拉選單對齊確認區 -->
                     <div id="scoreMappingArea" class="mapping-box" style="display: none;">
                         <h6 class="fw-bold text-primary mb-2">🔍 請確認成績單欄位 (下拉選單確認)：</h6>
                         <div class="row g-2 small">
@@ -200,8 +196,11 @@
     </div>
 
     <!-- 🔄 全域成績勾選與多維分組分析控制台 -->
-    <div class="card mb-4 shadow-sm border-start border-success border-4">
-        <div class="card-header bg-dark text-white">🔄 分析控制台：挑選評估範圍與自訂多維分析維度</div>
+    <div class="card mb-4 shadow-sm border-start border-success border-4" id="analysisControlCard">
+        <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+            <span>🔄 分析控制台：挑選評估範圍與自訂多維分析維度</span>
+            <span id="analysisLockTag" style="display:none;" class="badge bg-warning text-dark">已套用教師專屬限制</span>
+        </div>
         <div class="card-body bg-white">
             <div class="row g-3">
                 <div class="col-md-5 border-end">
@@ -226,7 +225,7 @@
                     </div>
                 </div>
             </div>
-            <div class="text-center mt-3 border-top pt-3">
+            <div class="text-center mt-3 border-top pt-3" id="mainAnalysisBtnWrapper">
                 <button class="btn btn-primary fw-bold px-5 btn-lg" onclick="triggerMainAnalysis()">📊 啟動智能交叉多維分析</button>
             </div>
         </div>
@@ -332,7 +331,7 @@
             </div>
         </div>
 
-        <!-- ⚠️ 調整排版：第二部分重點關注表格與常態連動圖結合同欄對應 -->
+        <!-- 第二部分重點關注表格與常態連動圖結合同欄對應 -->
         <div class="row g-4 mb-4">
             <!-- 左：全科相對退步重點關注名單 -->
             <div class="col-lg-5">
@@ -365,7 +364,7 @@
             <div class="col-lg-7">
                 <div class="card h-100 shadow-sm border-start border-dark border-4">
                     <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-                        <span>🔔 全級常模鐘形曲線位置連動 (指到下方任一學生時，0 毫秒極速同步常模位置)</span>
+                        <span>🔔 全級常模鐘形曲線位置連動 (0 毫秒極速同步常模位置)</span>
                         <button class="btn-download" onclick="downloadChart('chartRankingBell')">📸 下載鐘形圖</button>
                     </div>
                     <div class="card-body">
@@ -375,7 +374,6 @@
                         <div style="position: relative; height: 210px;">
                             <canvas id="chartRankingBell"></canvas>
                         </div>
-                        <!-- 🌟 動態放大發光等級 Scale Bar -->
                         <div class="scale-bar-container" id="bellScaleBar">
                             <div class="scale-badge" style="background-color: #718096;" data-badge="flat">持平穩定</div>
                             <div class="scale-badge" style="background-color: #d69e2e;" data-badge="mild_up">溫和微步</div>
@@ -458,7 +456,7 @@
             </div>
         </div>
 
-        <!-- 🌟 區塊五：方案 3 獨立化 - 基礎能力監測名單 (成績 < 35分 地板群組) -->
+        <!-- 區塊五：基礎能力監測名單 (成績 < 35分 地板群組) -->
         <div class="card shadow-sm mb-4 border-start border-warning border-4">
             <div class="card-header bg-warning text-dark fw-bold d-flex justify-content-between align-items-center">
                 <span>⚠️ 基礎能力監測名單 (成績 &lt; 35分 地板猜測區獨立追蹤 - 不參與 ΔZ 排行)</span>
@@ -496,7 +494,6 @@
                     <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
                         <span>第二部分：學生學習狀態四象限分佈圖</span>
                         <div class="d-flex align-items-center gap-2">
-                            <!-- 🌟 新增：趨勢模式勾選 -->
                             <div class="form-check form-switch mb-0">
                                 <input class="form-check-input" type="checkbox" id="quadrantTrendMode" onchange="renderQuadrantWithFilter()">
                                 <label class="form-check-label text-white small" for="quadrantTrendMode">📊 趨勢向量模式</label>
@@ -514,7 +511,7 @@
                     </div>
                 </div>
             </div>
-            <!-- 🌟 右側新增：四象限分類名冊 -->
+            <!-- 右側四象限分類名冊 -->
             <div class="col-lg-5">
                 <div class="card h-100 shadow-sm border-start border-secondary border-4">
                     <div class="card-header bg-secondary text-white fw-bold">📋 學生學習狀態四象限名冊 (配合班別篩選)</div>
@@ -583,12 +580,23 @@
 // --- 全域變數定義 ---
 let currentUserRole = 'viewer';
 const ADMIN_EMAIL = "lwysams@bcklas.edu.hk";
+const RESTRICTED_TEACHER_EMAIL = "class01@bcklas.edu.hk";
+
+// 🔒 教師帳戶規定的鎖定條件 (您可隨時在此調整指定學年與評估)
+const TEACHER_RESTRICTIONS = {
+    schoolYear: "26",      // 規定 26 學年
+    grade: "P2",           // 規定 P2 年級
+    oldScores: ["25_P1T2A2"], // 規定的舊評估代號
+    newScore: "26_P2T1A1"     // 規定的新評估代號
+};
+
 let cohortAssessments = [];
 let activeOldAssess = [];
 let activeNewAssess = null;
 let chartInstances = {};
 let parsedTempRegistryRows = null;
 let parsedTempScoreRows = null;
+let rankingStudentsList = [];
 
 const SUBJECT_KEYS = {
     'chi_read': ['中讀', '中文閱讀', '閱讀'],
@@ -598,19 +606,147 @@ const SUBJECT_KEYS = {
     'math': ['數學', 'maths', 'mathematics']
 };
 
-// --- 登入與登出邏輯 ---
+// --- Firebase 登入狀態監控 ---
+window.addEventListener('firebaseReady', () => {
+    window.onAuthStateChanged(window.auth, (user) => {
+        if (user) {
+            document.getElementById('login-overlay').style.display = 'none';
+            document.getElementById('main-app').style.display = 'block';
+            document.getElementById('user-email-display').innerText = user.email;
+            
+            const userEmail = user.email.toLowerCase();
+            
+            if (userEmail === ADMIN_EMAIL.toLowerCase()) {
+                // 管理員角色：全部解鎖
+                currentUserRole = 'admin';
+                document.getElementById('user-role-badge').innerText = '管理員';
+                document.getElementById('user-role-badge').className = 'badge bg-danger';
+                document.getElementById('uploadSection').style.display = 'block';
+                document.getElementById('selectSchoolYear').disabled = false;
+                document.getElementById('selectGrade').disabled = false;
+                document.getElementById('yearLockTag').style.display = 'none';
+                document.getElementById('gradeLockTag').style.display = 'none';
+                document.getElementById('analysisLockTag').style.display = 'none';
+                document.getElementById('mainAnalysisBtnWrapper').style.display = 'block';
+                updateGradeDropdown();
+            } else if (userEmail === RESTRICTED_TEACHER_EMAIL.toLowerCase()) {
+                // 🔒 受限教師 Class01：強制套用規定條件，鎖定介面
+                currentUserRole = 'restricted_teacher';
+                document.getElementById('user-role-badge').innerText = '教師 (權限鎖定)';
+                document.getElementById('user-role-badge').className = 'badge bg-warning text-dark';
+                document.getElementById('uploadSection').style.display = 'none';
+                
+                // 鎖定學年與年級
+                document.getElementById('selectSchoolYear').value = TEACHER_RESTRICTIONS.schoolYear;
+                document.getElementById('selectSchoolYear').disabled = true;
+                document.getElementById('yearLockTag').style.display = 'inline-block';
+                
+                document.getElementById('yearLockTag').style.display = 'inline-block';
+                document.getElementById('gradeLockTag').style.display = 'inline-block';
+                document.getElementById('analysisLockTag').style.display = 'inline-block';
+                
+                applyRestrictedTeacherWorkflow();
+            } else {
+                // 一般教師 (唯讀)
+                currentUserRole = 'viewer';
+                document.getElementById('user-role-badge').innerText = '老師 (唯讀)';
+                document.getElementById('user-role-badge').className = 'badge bg-success';
+                document.getElementById('uploadSection').style.display = 'none';
+                updateGradeDropdown();
+            }
+        } else {
+            document.getElementById('login-overlay').style.display = 'flex';
+            document.getElementById('main-app').style.display = 'none';
+        }
+    });
+});
+
+// 🔒 教師專屬鎖定工作流實作
+async function applyRestrictedTeacherWorkflow() {
+    const year = parseInt(TEACHER_RESTRICTIONS.schoolYear);
+    const selectGrade = document.getElementById('selectGrade');
+    selectGrade.innerHTML = '';
+    
+    for (let g = 1; g <= 6; g++) {
+        const entranceYear = year - g + 1;
+        const option = new Option(`P${g} (${entranceYear}年入學)`, `P${g}`);
+        option.dataset.entrance = entranceYear;
+        selectGrade.add(option);
+    }
+    selectGrade.value = TEACHER_RESTRICTIONS.grade;
+    selectGrade.disabled = true;
+    
+    // 撈取資料庫
+    await onCohortChanged();
+    
+    // 自動勾選指定的新舊評估並鎖定
+    setTimeout(() => {
+        // 鎖定舊評估勾選
+        document.querySelectorAll('input[name="globalOld"]').forEach(el => {
+            el.checked = TEACHER_RESTRICTIONS.oldScores.includes(el.value);
+            el.disabled = true;
+        });
+        
+        // 鎖定新評估選取
+        document.querySelectorAll('input[name="globalNew"]').forEach(el => {
+            el.checked = (el.value === TEACHER_RESTRICTIONS.newScore);
+            el.disabled = true;
+        });
+        
+        // 自動執行分析
+        activeOldAssess = TEACHER_RESTRICTIONS.oldScores;
+        activeNewAssess = TEACHER_RESTRICTIONS.newScore;
+        performCalculation(activeOldAssess, activeNewAssess, ['class']);
+        
+        // 隱藏手動分析按鈕防止更動
+        document.getElementById('mainAnalysisBtnWrapper').style.display = 'none';
+        showStatus(`🔒 已套用 Class01 專屬教學設定：鎖定在 ${TEACHER_RESTRICTIONS.schoolYear}學年 ${TEACHER_RESTRICTIONS.grade}。`, 'info');
+    }, 400);
+}
+
+// 登入函數 (增強防卡死容錯)
 window.performLogin = function() {
-    const email = document.getElementById('loginEmail').value;
-    const pass = document.getElementById('loginPass').value;
+    const email = document.getElementById('loginEmail').value.trim();
+    const pass = document.getElementById('loginPass').value.trim();
     const msg = document.getElementById('loginMsg');
     const btn = document.getElementById('btnLoginBtn');
+    
     if(!email || !pass) { msg.innerText = "請輸入完整帳號密碼"; return; }
     btn.disabled = true; btn.innerText = "驗證中..."; msg.innerText = "";
     
-    window.signInWithEmailAndPassword(window.auth, email, pass).catch((error) => {
+    if (!window.auth) {
         btn.disabled = false; btn.innerText = "登入系統";
-        msg.innerText = "登入失敗，請檢查帳號或密碼是否正確。";
-    });
+        msg.innerText = "系統初始化中，請稍候 2 秒再試一次。";
+        return;
+    }
+    
+    // 設置 12 秒超時防護，避免永遠卡在「驗證中...」
+    const loginTimeout = setTimeout(() => {
+        if (btn.disabled) {
+            btn.disabled = false; btn.innerText = "登入系統";
+            msg.innerText = "連線逾時。請確認 Firebase Console 已開啟「Email/Password」登入方式。";
+        }
+    }, 12000);
+    
+    window.signInWithEmailAndPassword(window.auth, email, pass)
+        .then(() => {
+            clearTimeout(loginTimeout);
+            btn.disabled = false; btn.innerText = "登入系統";
+        })
+        .catch((error) => {
+            clearTimeout(loginTimeout);
+            btn.disabled = false; btn.innerText = "登入系統";
+            let errMsg = "登入失敗：請檢查帳號密碼。";
+            if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+                errMsg = "帳號或密碼錯誤。請至 Firebase Console 確認該帳號已建立。";
+            } else if (error.code === 'auth/operation-not-allowed') {
+                errMsg = "錯誤：Firebase 尚未開啟「電子郵件/密碼」登入方式！請至 Firebase 後台啟用。";
+            } else if (error.message) {
+                errMsg = `登入錯誤 (${error.code || '未知'})`;
+            }
+            msg.innerText = errMsg;
+            console.error("Login Error:", error);
+        });
 };
 
 window.performLogout = function() { window.signOut(window.auth); };
@@ -704,7 +840,6 @@ window.enforceDimensionLimit = function(el) {
     }
 };
 
-// --- CSV 解析與資料載入 ---
 function parseCSV(file, callback) {
     const reader = new FileReader();
     reader.onload = function(e) {
@@ -717,6 +852,31 @@ function parseCSV(file, callback) {
         });
     };
     reader.readAsText(file.slice(0, 5000));
+}
+
+function parseDOB(rawStr) {
+    if (!rawStr) return { year: '未知', group: '未知' };
+    const str = String(rawStr).trim();
+    let y = null, m = null;
+    if (str.includes('-') || str.includes('/')) {
+        const parts = str.split(/[-/]/);
+        if (parts[0].length === 4) { y = parseInt(parts[0]); m = parseInt(parts[1]); }
+        else if (parts[2] && parts[2].length === 4) { y = parseInt(parts[2]); m = parseInt(parts[1]); }
+    }
+    if (!m || isNaN(m)) return { year: y ? `${y}年` : '未知', group: '未知' };
+    
+    let group = '細B (9-12月)';
+    if (m >= 1 && m <= 4) group = '大B (1-4月)';
+    else if (m >= 5 && m <= 8) group = '中B (5-8月)';
+    return { year: y ? `${y}年` : '未知', group: group };
+}
+
+function parseGender(val) {
+    if (!val) return '未知';
+    const s = String(val).trim().toUpperCase();
+    if (['M', '1', '男', 'MALE'].includes(s)) return '男';
+    if (['F', '2', '女', 'FEMALE'].includes(s)) return '女';
+    return s;
 }
 
 window.handleRegistryFileSelected = function(fileEl) {
@@ -737,7 +897,7 @@ window.handleRegistryFileSelected = function(fileEl) {
                 el.add(opt);
             });
         };
-        populateSelect('mapReg_id', ['*Reg. No.', '學生註冊編號', '註冊編號', '學號']);
+        populateSelect('mapReg_id', ['*Reg. No.', '學生註冊編號', '註冊編號', '學號', '入學編號']);
         populateSelect('mapReg_name', ['姓名', 'Name', '中文姓名']);
         populateSelect('mapReg_class', ['班別', 'Class', '組']);
         populateSelect('mapReg_dob', ['出生日期', 'DOB', 'Date of Birth']);
@@ -757,9 +917,9 @@ window.commitRegistryUpload = async function() {
     const colGender = document.getElementById('mapReg_gender').value;
     const colClassNo = document.getElementById('mapReg_classno').value;
     
-    if (!colId || !colName || !colClass) { alert("學號、姓名、班別為必選欄位！"); return; }
+    if (!colId || !colName || !colClass) { alert("入學編號、姓名、班別為必選欄位！"); return; }
     
-    showStatus("⏳ 正在建立並寫入官方年度名冊至雲端...", "warning");
+    showStatus("⏳ 正在寫入官方名冊至雲端...", "warning");
     const headers = parsedTempRegistryRows[0].map(h => String(h || '').trim());
     const dataRows = parsedTempRegistryRows.slice(1);
     const registryMap = {};
@@ -772,7 +932,6 @@ window.commitRegistryUpload = async function() {
         const dobRaw = colDob ? row[headers.indexOf(colDob)] : '';
         const genderRaw = colGender ? row[headers.indexOf(colGender)] : '';
         const classNoRaw = colClassNo ? row[headers.indexOf(colClassNo)] : '';
-        
         const dobInfo = parseDOB(dobRaw);
         const classNoInt = parseInt(String(classNoRaw).trim(), 10);
         
@@ -787,7 +946,7 @@ window.commitRegistryUpload = async function() {
         year: parseInt(year), grade: grade, lastUpdated: new Date().toISOString(), registry: registryMap
     });
     showStatus(`✅ 官方年度名冊建置成功！(共 ${Object.keys(registryMap).length} 位學生)`, "success");
-    alert(`官方名冊儲存成功！\n總人數: ${Object.keys(registryMap).length}`);
+    alert(`官方名冊儲存成功！\n人數: ${Object.keys(registryMap).length}`);
 };
 
 window.handleScoreFileSelected = function(fileEl) {
@@ -808,7 +967,7 @@ window.handleScoreFileSelected = function(fileEl) {
                 el.add(opt);
             });
         };
-        populateSelect('mapScore_id', ['*Reg. No.', '學生註冊編號', '學號']);
+        populateSelect('mapScore_id', ['*Reg. No.', '學生註冊編號', '學號', '入學編號']);
         populateSelect('mapScore_math', ['數學', 'math']);
         populateSelect('mapScore_chiread', ['中讀', '中文閱讀', '閱讀']);
         populateSelect('mapScore_chidict', ['中默', '中文默書', '默書']);
@@ -821,21 +980,20 @@ window.handleScoreFileSelected = function(fileEl) {
 window.commitScoreUpload = async function() {
     const code = document.getElementById('inputAssessCode').value.trim();
     const match = code.match(/^(\d+)(P\d)(.+)$/i);
-    if (!match) { alert("評估代號格式必須為如 '26P3T1'"); return; }
+    if (!match) { alert("評估代號格式錯誤，必須如 '26P3T1'"); return; }
     
     const year = parseInt(match[1]);
     const grade = match[2].toUpperCase();
     const term = match[3].toUpperCase();
     const colId = document.getElementById('mapScore_id').value;
-    if (!colId) { alert("必須選擇學號對應欄位！"); return; }
+    if (!colId) { alert("必須選擇入學編號欄位！"); return; }
     
-    showStatus("⏳ 正在建立學期成績數據，並與官方名冊對齊聯動...", "warning");
-    
+    showStatus("⏳ 正在對齊年度官方名冊並儲存成績單...", "warning");
     let registryMap = {};
     try {
         const regSnap = await window.getDoc(window.doc(window.db, "StudentRegistry_v2", `${year}_${grade}_Registry`));
         if (regSnap.exists()) registryMap = regSnap.data().registry;
-    } catch(e) { console.warn("未發現官方名冊，使用純成績表資料。"); }
+    } catch(e) { console.warn("未發現名冊。"); }
     
     const headers = parsedTempScoreRows[0].map(h => String(h || '').trim());
     const dataRows = parsedTempScoreRows.slice(1);
@@ -851,7 +1009,6 @@ window.commitScoreUpload = async function() {
         const regNo = String(row[headers.indexOf(colId)] || '').trim().replace(/#/g, '');
         if (!regNo) return;
         const regInfo = registryMap[regNo] || {};
-        
         studentsList.push({
             regNo: regNo,
             name: regInfo.name || '未登錄',
@@ -871,9 +1028,8 @@ window.commitScoreUpload = async function() {
     await window.setDoc(window.doc(window.db, "CrossYearScores_v2", code), {
         code, year, grade, term, lastUpdated: new Date().toISOString(), students: studentsList
     });
-    
-    showStatus(`✅ 評估 ${code} 成功儲存與對齊！`, "success");
-    alert(`成績單儲存成功！共關聯 ${studentsList.length} 位學童。`);
+    showStatus(`✅ 評估 ${code} 成功儲存與名冊關聯！`, "success");
+    alert(`成績單儲存成功！共關聯 ${studentsList.length} 位學生。`);
     onCohortChanged();
 };
 
@@ -891,27 +1047,22 @@ window.triggerMainAnalysis = function() {
 };
 
 function performCalculation(oldCodes, newCode, selectedDims) {
-    showStatus("⏳ 正在以新名單為母體標準進行 Z-Score 標準化與試卷品質診斷...", "warning");
-    
+    showStatus("⏳ 正在進行數據標準化與試卷鑑別度分析...", "warning");
     const year = parseInt(document.getElementById('selectSchoolYear').value);
     const grade = document.getElementById('selectGrade').value;
     const registryDocId = `${year}_${grade}_Registry`;
     
-    // 一定要先撈取現行選擇的學年官方名冊 (如 26_P2_Registry) 作為唯一分班與學籍姓名標準字典 [1]
     window.getDoc(window.doc(window.db, "StudentRegistry_v2", registryDocId)).then((regSnap) => {
         let currentRegistry = {};
-        if (regSnap.exists()) {
-            currentRegistry = regSnap.data().registry;
-        }
+        if (regSnap.exists()) currentRegistry = regSnap.data().registry;
         
         const newAssessObj = cohortAssessments.find(a => a.code === newCode);
         const oldAssessObjs = cohortAssessments.filter(a => oldCodes.includes(a.code));
+        if (!newAssessObj) { showStatus("❌ 找不到新成績資料", "danger"); return; }
         
-        // 以新成績名單為唯一標準，排除離校生 [1]
         const baseStudents = newAssessObj.students;
         const baseRegs = new Set(baseStudents.map(s => s.regNo));
         
-        // 標準化母體統計
         const statsMap = {};
         const allInvolved = [newAssessObj, ...oldAssessObjs];
         allInvolved.forEach(assess => {
@@ -927,7 +1078,6 @@ function performCalculation(oldCodes, newCode, selectedDims) {
             });
         });
         
-        // 智慧分班與學童字典對齊機制
         const getGroupKey = (s) => {
             const parts = [];
             selectedDims.forEach(dim => {
@@ -939,7 +1089,6 @@ function performCalculation(oldCodes, newCode, selectedDims) {
         
         const analyzedStudents = {};
         baseStudents.forEach(bs => {
-            // 自動查找現行官方名冊進行強制對齊，避免未分班
             const officialInfo = currentRegistry[bs.regNo] || {};
             const finalClass = officialInfo.class || bs.class || '未分班';
             const finalName = officialInfo.name || bs.name || '未登錄';
@@ -952,8 +1101,7 @@ function performCalculation(oldCodes, newCode, selectedDims) {
                 regNo: bs.regNo, name: finalName, class: finalClass, gender: finalGender,
                 classNo: finalClassNo, birthGroup: finalBirthGroup, birthYear: finalBirthYear
             };
-            const gKey = getGroupKey(tempStudent);
-            tempStudent.groupKey = gKey;
+            tempStudent.groupKey = getGroupKey(tempStudent);
             
             analyzedStudents[bs.regNo] = {
                 ...tempStudent,
@@ -1025,7 +1173,43 @@ function performCalculation(oldCodes, newCode, selectedDims) {
     });
 }
 
-// 試卷品質診斷 (Ebel 27% 鑑別度檢測)
+function buildIndependentFilters() {
+    const panels = ['filter-chartImproveRegress', 'filter-chartTwoPointTrend', 'filter-chartClassRawLine', 'filter-chartQuadrant', 'filter-dumbbellChart'];
+    panels.forEach(pId => {
+        const panel = document.getElementById(pId);
+        if (!panel) return;
+        panel.innerHTML = '<span class="fw-bold me-3">🔧 本圖表獨立微調:</span>';
+        currentAnalysisResult.oldCodes.forEach(code => {
+            const span = document.createElement('span');
+            span.className = 'form-check form-check-inline m-0 me-3';
+            span.innerHTML = `
+                <input class="form-check-input micro-tick" type="checkbox" data-chart="${pId}" value="${code}" checked id="${pId}_${code}" onchange="onMicroFilterChanged('${pId}')">
+                <label class="form-check-label text-danger" for="${pId}_${code}">${code}</label>
+            `;
+            panel.appendChild(span);
+        });
+        const spanNew = document.createElement('span');
+        spanNew.className = 'form-check form-check-inline m-0';
+        spanNew.innerHTML = `
+            <input class="form-check-input" type="checkbox" checked disabled>
+            <label class="form-check-label text-success">${currentAnalysisResult.newCode} (新)</label>
+        `;
+        panel.appendChild(spanNew);
+    });
+}
+
+function onMicroFilterChanged(panelId) {
+    const subj = document.getElementById('subjectSelector').value;
+    const checkedTicks = Array.from(document.querySelectorAll(`#${panelId} .micro-tick:checked`)).map(el => el.value);
+    const baseNew = currentAnalysisResult.newCode;
+    
+    if (panelId === 'filter-chartImproveRegress') renderImproveRegressChart(subj, checkedTicks, baseNew);
+    else if (panelId === 'filter-chartTwoPointTrend') renderTwoPointTrendChart(subj, checkedTicks, baseNew);
+    else if (panelId === 'filter-chartClassRawLine') renderClassRawTrendLine(subj, checkedTicks, baseNew);
+    else if (panelId === 'filter-chartQuadrant') renderQuadrantChart(subj, checkedTicks, baseNew, document.getElementById('quadrantClassSelector').value, document.getElementById('quadrantTrendMode').checked);
+    else if (panelId === 'filter-dumbbellChart') renderDetailDumbbellChart();
+}
+
 function runEbelTestDiagnostics(subj, newCode) {
     const students = currentAnalysisResult.students;
     const scores = students.map(s => s.newScores.raw[subj]).filter(v => v !== null && !isNaN(v));
@@ -1139,7 +1323,7 @@ function renderImproveRegressChart(subj, oldCodes, newCode) {
     });
 }
 
-// 2. 兩點均分對比圖 (舊均分 vs 新新成績)
+// 2. 兩點均分對比圖
 function renderTwoPointTrendChart(subj, oldCodes, newCode) {
     const students = currentAnalysisResult.students;
     const groups = currentAnalysisResult.groupList;
@@ -1306,8 +1490,6 @@ window.renderQuadrantWithFilter = function() {
 function renderQuadrantChart(subj, oldCodes, newCode, filterClass, trendMode) {
     const students = currentAnalysisResult.students;
     const scatterData = [];
-    
-    // 用於四象限右側名冊
     const listLead = []; const listGrowth = []; const listDoubleDrop = []; const listWarning = [];
     
     students.forEach(s => {
@@ -1326,7 +1508,6 @@ function renderQuadrantChart(subj, oldCodes, newCode, filterClass, trendMode) {
             };
             scatterData.push(item);
             
-            // 四象限歸類邏輯 (按臨界值 0.2Z 與 0 區分)
             if (xVal >= 0 && yVal > 0.2) listLead.push(item);
             else if (xVal < 0 && yVal > 0.2) listGrowth.push(item);
             else if (xVal < 0 && yVal < -0.2) listDoubleDrop.push(item);
@@ -1334,10 +1515,8 @@ function renderQuadrantChart(subj, oldCodes, newCode, filterClass, trendMode) {
         }
     });
     
-    // 渲染右側四象限名冊 (自然班號與姓名對齊)
     const renderQuadTableList = (elId, list, isPositiveProgress = true) => {
         const el = document.getElementById(elId);
-        // 按 Z-score 變動值排序
         list.sort((a, b) => isPositiveProgress ? b.y - a.y : a.y - b.y);
         if (list.length === 0) { el.innerHTML = '<div class="text-muted p-1 text-center">空</div>'; return; }
         el.innerHTML = list.map(s => `
@@ -1352,7 +1531,6 @@ function renderQuadrantChart(subj, oldCodes, newCode, filterClass, trendMode) {
     renderQuadTableList('quadList_double_drop', listDoubleDrop, false);
     renderQuadTableList('quadList_warning', listWarning, false);
     
-    // Annotation 幾何向量箭頭 (趨勢模式)
     const annotations = {
         lineX: { type: 'line', xMin: 0, xMax: 0, borderColor: '#cbd5e0', borderWidth: 1.5 },
         lineY: { type: 'line', yMin: 0, yMax: 0, borderColor: '#cbd5e0', borderWidth: 1.5 },
@@ -1373,7 +1551,6 @@ function renderQuadrantChart(subj, oldCodes, newCode, filterClass, trendMode) {
         });
     }
     
-    // 如果是單班模式，直接在圓點旁標註姓名防重疊
     const isSingleClassSelected = filterClass !== 'all';
     
     if (chartInstances['chartQuadrant']) chartInstances['chartQuadrant'].destroy();
@@ -1383,7 +1560,7 @@ function renderQuadrantChart(subj, oldCodes, newCode, filterClass, trendMode) {
             datasets: [{
                 label: '學生分佈', data: scatterData,
                 backgroundColor: scatterData.map(d => {
-                    if (trendMode) return 'rgba(0,0,0,0.15)'; // 趨勢起點設為半透明
+                    if (trendMode) return 'rgba(0,0,0,0.15)';
                     return (d.x >= 0 && d.y > 0.2) ? '#198754' : (d.x < 0 && d.y > 0.2) ? '#d97706' : (d.x < 0 && d.y < -0.2) ? '#dc3545' : (d.x >= 0 && d.y < -0.2) ? '#fd7e14' : '#cbd5e0';
                 }),
                 pointRadius: trendMode ? 4 : 6
@@ -1401,7 +1578,6 @@ function renderQuadrantChart(subj, oldCodes, newCode, filterClass, trendMode) {
             }
         },
         plugins: [{
-            // 自繪單班姓名標籤
             id: 'classLabelPlugin',
             afterDatasetsDraw: (chart) => {
                 if (!isSingleClassSelected) return;
@@ -1414,8 +1590,6 @@ function renderQuadrantChart(subj, oldCodes, newCode, filterClass, trendMode) {
                     const meta = chart.getDatasetMeta(0);
                     const pt = meta.data[idx];
                     if (pt && !pt.skip) {
-                        // 智慧微偏移防重疊
-                        const offset = (idx % 2 === 0) ? -12 : 12;
                         ctx.fillText(d.name, pt.x + 8, pt.y + (idx % 3 - 1) * 6);
                     }
                 });
@@ -1446,9 +1620,8 @@ function renderDetailDumbbellChart() {
     if (sortVal === 'new_score_desc') gStudents.sort((a,b) => b.newRaw - a.newRaw);
     else if (sortVal === 'old_score_desc') gStudents.sort((a,b) => b.oldRaw - a.oldRaw);
     else if (sortVal === 'diff_desc') gStudents.sort((a,b) => b.diff - a.diff);
-    else if (sortVal === 'name_asc') gStudents.sort((a,b) => a.name.localeCompare(b.name, 'zh-HK'));
+    else if (sortVal === 'name_asc') gStudents.sort((a,b) => a.classNo - b.classNo); // 依自然班號排序
     
-    // 🌟 在姓名左邊加學生的自然班號 (格式: 01, 02... 10, 11)
     const pad = (n) => String(n).padStart(2, '0');
     const labels = gStudents.map(s => `${pad(s.classNo)}. ${s.name}`);
     
@@ -1579,7 +1752,6 @@ function renderRankingBellCurve(activeStudent = null) {
         meanLine: { type: 'line', xMin: 0, xMax: 0, borderColor: '#718096', borderWidth: 1, borderDash: [4, 4] }
     };
     
-    // 重置所有等級徽章的高亮狀態
     document.querySelectorAll('.scale-badge').forEach(el => {
         el.className = 'scale-badge dimmed';
     });
@@ -1612,7 +1784,6 @@ function renderRankingBellCurve(activeStudent = null) {
             };
         }
         
-        // 🌟 在舊成績線與新成績線之間，繪製一根不透明大箭頭
         if (oldZ !== null && newZ !== null) {
             annotations.largeArrow = {
                 type: 'line',
@@ -1631,7 +1802,6 @@ function renderRankingBellCurve(activeStudent = null) {
             };
         }
         
-        // 🌟 Scale Bar 學生等級動態高亮放大與發光
         let badgeType = 'flat';
         if (activeStudent.zDiff >= 0.8) badgeType = 'break_up';
         else if (activeStudent.zDiff >= 0.5) badgeType = 'sig_up';
@@ -1657,7 +1827,6 @@ function renderRankingBellCurve(activeStudent = null) {
             全級名次: <span class="badge bg-dark">${rankText}</span>
         `;
     } else {
-        // 沒有指到任何人時，全部等級標章正常不淡化
         document.querySelectorAll('.scale-badge').forEach(el => {
             el.className = 'scale-badge';
         });
@@ -1671,7 +1840,7 @@ function renderRankingBellCurve(activeStudent = null) {
         options: {
             responsive: true,
             maintainAspectRatio: false,
-            animation: false, // 🌟 徹底刪除連動動畫，實現 0ms 極速無延遲響應 [1]
+            animation: false,
             scales: {
                 x: {
                     type: 'linear', min: -3.5, max: 3.5,
@@ -1713,7 +1882,6 @@ function renderTop20ProgressRegression(subj, oldCodes, newCode) {
         }
     });
     
-    // 🌟 方案 3：地板極低分篩選 (< 35 分) 獨立化
     const FLOOR_THRESHOLD = 35;
     const normalList = [];
     const floorList = [];
@@ -1726,7 +1894,6 @@ function renderTop20ProgressRegression(subj, oldCodes, newCode) {
         }
     });
     
-    // 計算常態學生的前進 PR 與舊/新名次
     const oldSorted = [...normalList].sort((a,b) => b.oldZ - a.oldZ);
     normalList.forEach(item => {
         const rIdx = oldSorted.findIndex(x => x.regNo === item.regNo);
@@ -1745,7 +1912,6 @@ function renderTop20ProgressRegression(subj, oldCodes, newCode) {
     
     rankingStudentsList = [...normalList, ...floorList];
     
-    // 輔助函數：取得等級徽章 HTML
     const getBadgeHTML = (zDiff) => {
         if (zDiff >= 0.8) return `<span class="badge bg-success" style="background-color:#198754 !important;">🌟 突破性躍進</span>`;
         if (zDiff >= 0.5) return `<span class="badge bg-primary" style="background-color:#3182ce !important;">🚀 顯著進步</span>`;
@@ -1756,15 +1922,13 @@ function renderTop20ProgressRegression(subj, oldCodes, newCode) {
         return `<span class="badge bg-secondary" style="background-color:#718096 !important;">⚖️ 穩健持平</span>`;
     };
     
-    // 渲染 A: 卓越進步排行榜 (Z-Score 前20名 - 8 欄對照)
+    // 渲染 A: 卓越進步排行榜 (Z-Score 前20名)
     normalList.sort((a,b) => b.zDiff - a.zDiff);
     const top20 = normalList.slice(0, 20);
     const progressBody = document.getElementById('rankingProgressBody');
     progressBody.innerHTML = top20.map((s, idx) => {
         const rankText = s.rankDiff > 0 ? `(↑${s.rankDiff})` : s.rankDiff < 0 ? `(↓${Math.abs(s.rankDiff)})` : `(持平)`;
         const rankColor = s.rankDiff > 0 ? 'text-success' : s.rankDiff < 0 ? 'text-danger' : 'text-muted';
-        const prArrow = s.prDiff > 0 ? '↑' : s.prDiff < 0 ? '↓' : '';
-        const prText = s.prDiff === 0 ? `PR ${s.oldPr} ➔ PR ${s.newPr}` : `PR ${s.oldPr} ➔ PR ${s.newPr} (${prArrow} ${Math.abs(s.prDiff)}%)`;
         const rawSign = s.rawDiff > 0 ? '+' : '';
         const rawColor = s.rawDiff >= 0 ? 'text-success' : 'text-danger';
         
@@ -1783,15 +1947,13 @@ function renderTop20ProgressRegression(subj, oldCodes, newCode) {
         `;
     }).join('');
     
-    // 渲染 B: 重點關懷排行榜 (Z-Score 後20名 - 8 欄對照)
+    // 渲染 B: 重點關懷排行榜 (Z-Score 後20名)
     normalList.sort((a,b) => a.zDiff - b.zDiff);
     const bottom20 = normalList.slice(0, 20);
     const regressBody = document.getElementById('rankingRegressBody');
     regressBody.innerHTML = bottom20.map((s, idx) => {
         const rankText = s.rankDiff > 0 ? `(↑${s.rankDiff})` : s.rankDiff < 0 ? `(↓${Math.abs(s.rankDiff)})` : `(持平)`;
         const rankColor = s.rankDiff > 0 ? 'text-success' : s.rankDiff < 0 ? 'text-danger' : 'text-muted';
-        const prArrow = s.prDiff > 0 ? '↑' : s.prDiff < 0 ? '↓' : '';
-        const prText = s.prDiff === 0 ? `PR ${s.oldPr} ➔ PR ${s.newPr}` : `PR ${s.oldPr} ➔ PR ${s.newPr} (${prArrow} ${Math.abs(s.prDiff)}%)`;
         const rawSign = s.rawDiff > 0 ? '+' : '';
         const rawColor = s.rawDiff >= 0 ? 'text-success' : 'text-danger';
         
@@ -1810,7 +1972,7 @@ function renderTop20ProgressRegression(subj, oldCodes, newCode) {
         `;
     }).join('');
     
-    // 渲染 C: ⚠️ 基礎能力監測名單 (成績 < 35分 地板群組)
+    // 渲染 C: 基礎能力監測名單
     document.getElementById('floorCountBadge').innerText = `${floorList.length} 人`;
     const floorBody = document.getElementById('floorMonitoringBody');
     floorList.sort((a,b) => a.newRaw - b.newRaw);
