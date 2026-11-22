@@ -2007,6 +2007,7 @@
             
             const oldRawList = [];
             const newRawList = [];
+            const newDotColors = []; // 🌟 新增：用來記錄每位學生新成績圓點的顏色
             
             gStudents.forEach((s, sIdx) => {
                 const newRaw = s.newScores.raw[L.key];
@@ -2018,24 +2019,33 @@
                 
                 if (newRaw !== null && oldRawAvg !== null) {
                     const diff = (s.newScores.z[L.key] || 0) - (s.oldScores.z[L.key] || 0);
-                    const arrowColor = diff > 0.2 ? '#198754' : diff < -0.2 ? '#dc3545' : '#718096';
+                    // 🌟 定義狀態顏色：進步(綠 #198754) / 退步(紅 #dc3545) / 持平(深灰色 #718096)
+                    const statusColor = diff > 0.2 ? '#198754' : diff < -0.2 ? '#dc3545' : '#718096';
                     
+                    newDotColors.push(statusColor); // 把顏色存進陣列給圓點用
+                    
+                    // 繪製箭頭 (保持箭頭與圓點同色)
                     annotations.push({
                         x: newRaw, y: labels[sIdx], ax: oldRawAvg, ay: labels[sIdx],
                         xref: axisName, yref: 'y', axref: axisName, ayref: 'y',
-                        showarrow: true, arrowhead: 2, arrowsize: 1, arrowwidth: 1.5, arrowcolor: arrowColor
+                        showarrow: true, arrowhead: 2, arrowsize: 1, arrowwidth: 1.5, arrowcolor: statusColor
                     });
+                    // 繪製分數及差值文字
                     annotations.push({
                         x: Math.max(oldRawAvg, newRaw) + 2.5, y: labels[sIdx], xref: axisName, yref: 'y',
                         text: `${newRaw.toFixed(0)}分 (ΔZ:${diff >= 0 ? '+' : ''}${diff.toFixed(2)})`,
-                        showarrow: false, font: { color: arrowColor, size: 9, weight: 'bold' }, xanchor: 'left'
+                        showarrow: false, font: { color: statusColor, size: 9, weight: 'bold' }, xanchor: 'left'
                     });
+                } else {
+                    newDotColors.push('#cbd5e0'); // 若缺考，給予預設淺灰色
                 }
             });
             
+            // 🌟 加入舊成績與新成績標記點 (注意新成績 marker 的 color 改成了 newDotColors 陣列)
             traces.push({ x: oldRawList, y: labels, xaxis: axisName, yaxis: 'y', mode: 'markers', marker: { color: '#cbd5e0', size: 8 }, hoverinfo: 'x+y', name: '歷史舊平均', showlegend: false });
-            traces.push({ x: newRawList, y: labels, xaxis: axisName, yaxis: 'y', mode: 'markers', marker: { color: L.color, size: 10 }, hoverinfo: 'x+y', name: '最新成績', showlegend: false });
+            traces.push({ x: newRawList, y: labels, xaxis: axisName, yaxis: 'y', mode: 'markers', marker: { color: newDotColors, size: 10 }, hoverinfo: 'x+y', name: '最新成績', showlegend: false });
             
+            // 計算並畫出該科的全級平均線
             const newStats = currentAnalysisResult.statsMap[currentAnalysisResult.newCodes[0]]?.[L.key]; 
             const newGradeMean = newStats ? newStats.mean : 50;
             const oldMeans = checkedOld.map(c => currentAnalysisResult.statsMap[c]?.[L.key]?.mean).filter(v => v !== undefined);
@@ -2051,6 +2061,7 @@
                 x: newGradeMean, y: 1.08, xref: axisName, yref: 'paper', text: `新均: ${newGradeMean.toFixed(1)}分`, showarrow: false, font: { color: '#dc3545', size: 10, weight: 'bold' }, xanchor: 'center'
             });
         });
+
         
         const computedHeight = gStudents.length * 35;
         const mainSubjName = document.querySelector(`#subjectSelector option[value="${currentMainSubj}"]`).innerText;
