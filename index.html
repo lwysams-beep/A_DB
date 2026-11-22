@@ -268,14 +268,14 @@
                         <div class="row g-2">
                             <div class="col-4">
                                 <div class="stat-card">
-                                    <div class="small text-muted">全級標準差 ($sigma)</div>
+                                    <div class="small text-muted">全級標準差 (σ)</div>
                                     <div id="stat_sd" class="fs-4 fw-bold text-primary">-</div>
                                     <div id="stat_sd_label" class="badge bg-secondary small mt-1">-</div>
                                 </div>
                             </div>
                             <div class="col-4">
                                 <div class="stat-card">
-                                    <div class="small text-muted">試卷鑑別度 ($D)</div>
+                                    <div class="small text-muted">試卷鑑別度 (D)</div>
                                     <div id="stat_discrimination" class="fs-4 fw-bold text-success">-</div>
                                     <div id="stat_disc_label" class="badge bg-secondary small mt-1">-</div>
                                 </div>
@@ -1532,6 +1532,13 @@
         const canvas = document.getElementById('chartRankingBell');
         if (!canvas) return;
         
+        // 🌟 新增：抓取當前學科，以及「最新一次評估」的平均分與標準差
+        const subj = document.getElementById('subjectSelector').value;
+        const firstNewCode = currentAnalysisResult.newCodes[0];
+        const newStats = currentAnalysisResult.statsMap[firstNewCode]?.[subj];
+        const newMean = newStats ? newStats.mean : 50; // 預設防呆
+        const newStd = newStats ? newStats.std : 10;   // 預設防呆
+
         const bellData = [];
         for (let z = -3.5; z <= 3.5; z += 0.05) {
             const y = (1 / Math.sqrt(2 * Math.PI)) * Math.exp(-0.5 * z * z);
@@ -1675,11 +1682,25 @@
                 scales: {
                     x: {
                         type: 'linear', min: -3.5, max: 3.5,
-                        title: { display: true, text: '標準分數 (Z-Score)' },
-                        ticks: { stepSize: 0.5 }
+                        title: { display: true, text: '標準分數 (Z-Score) 與 本次評估等值分數' },
+                        ticks: { 
+                            stepSize: 0.5,
+                            // 🌟 新增：自訂刻度文字的 callback
+                            callback: function(value) {
+                                // 根據公式把 Z 轉回本次真實分數
+                                const rawScore = (value * newStd) + newMean; 
+                                
+                                // 判斷正數時加上 '+' 號，例如 '+1.5 Z'
+                                const zText = value > 0 ? `+${value} Z` : `${value} Z`; 
+                                
+                                // 回傳陣列，Chart.js 會自動變成上下兩行
+                                return [zText, `${rawScore.toFixed(0)}分`];
+                            }
+                        }
                     },
                     y: { display: false }
                 },
+
                 plugins: {
                     legend: { display: false },
                     annotation: { annotations }
