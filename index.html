@@ -499,7 +499,7 @@
                             <select id="quadrantClassSelector" class="form-select form-select-sm border-info" style="width: auto;" onchange="renderQuadrantWithFilter()"></select>
                         </div>
                         <div class="filter-panel" id="filter-chartQuadrant"></div>
-                        <div style="position: relative; height: 400px;"><canvas id="chartQuadrant"></canvas></div>
+                        <div style="position: relative; height: 550px;"><canvas id="chartQuadrant"></canvas></div>
                     </div>
                 </div>
             </div>
@@ -1925,13 +1925,16 @@
             options: {
                 responsive: true, maintainAspectRatio: false,
                 scales: {
-                    x: { title: { display: true, text: '基礎能力 (舊成績平均 Z-Score)' } },
-                    y: { title: { display: true, text: '學習動能 (Z-Score 相對進退步)' } }
+                    x: { 
+                        suggestedMin: -3, suggestedMax: 3, // 固定 X 軸範圍 (Z-Score 通常落在 -3 到 +3 之間)
+                        title: { display: true, text: '之前評估標準成績 (舊成績 Z-Score)' } 
+                    },
+                    y: { 
+                        suggestedMin: -3, suggestedMax: 3, // 固定 Y 軸範圍，確保與 X 軸視覺比例 1:1
+                        title: { display: true, text: '相對進退步 (Z-Score 新舊相差)' } 
+                    }
                 },
-                plugins: {
-                    tooltip: { callbacks: { label: (c) => `${c.raw.classNo}號 ${c.raw.name}: 舊均:${c.raw.oldRaw.toFixed(1)}分 ➔ 新:${c.raw.newRaw.toFixed(1)}分 (ΔZ:${c.raw.y.toFixed(2)})` } },
-                    annotation: { annotations }
-                }
+
             },
             plugins: [{
                 id: 'classLabelPlugin',
