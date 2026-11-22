@@ -1321,6 +1321,7 @@
         const datasets = [];
         const colors = ['#3182ce', '#dd6b20', '#319795', '#805ad5', '#e53e3e', '#d69e2e', '#4a5568'];
         
+        // --- 1. 計算各群組的平均分走勢 ---
         groups.forEach((g, idx) => {
             const groupStudents = students.filter(s => s.groupKey === g);
             const oldVals = [];
@@ -1343,7 +1344,34 @@
                 fill: false, tension: 0.1, pointRadius: 5
             });
         });
+
+        // --- 2. [新增] 計算全級學生的舊成績與新成績總平均 ---
+        const allOldVals = [];
+        const allNewVals = [];
+        students.forEach(s => {
+            const oList = oldCodes.map(c => s.details[c]?.raw[subj]).filter(v => v !== undefined && v !== null);
+            if (oList.length > 0) allOldVals.push(ss.mean(oList));
+            
+            const nList = newCodes.map(c => s.details[c]?.raw[subj]).filter(v => v !== undefined && v !== null);
+            if (nList.length > 0) allNewVals.push(ss.mean(nList));
+        });
+        const globalOldMean = allOldVals.length > 0 ? ss.mean(allOldVals) : null;
+        const globalNewMean = allNewVals.length > 0 ? ss.mean(allNewVals) : null;
+
+        // ---  3. [新增] 插入全級平均的對比點，設定為黑色虛線 ---
+        datasets.push({
+            label: '全級平均', 
+            data: [globalOldMean, globalNewMean],
+            borderColor: '#000000',      // 設定線的顏色為黑色
+            backgroundColor: '#000000',  // 設定點的顏色為黑色
+            borderDash: [5, 5],          // 這一行讓線變成了「虛線」
+            borderWidth: 3,              // 讓虛線稍微加粗，更清晰可見
+            fill: false, 
+            tension: 0.1, 
+            pointRadius: 6
+        });
         
+        // --- 4. 繪製圖表 ---
         if (chartInstances['chartTwoPointTrend']) chartInstances['chartTwoPointTrend'].destroy();
         chartInstances['chartTwoPointTrend'] = new Chart(document.getElementById('chartTwoPointTrend').getContext('2d'), {
             type: 'line',
@@ -1365,6 +1393,7 @@
             }
         });
     }
+
     
     function renderDistributionChart(subj, firstNewCode) {
         const students = currentAnalysisResult.students;
